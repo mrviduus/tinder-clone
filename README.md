@@ -124,6 +124,51 @@ When running in development mode, visit http://localhost:8080/swagger for intera
 - `GET /api/matches` - Get user's matches
 - `SignalR /hubs/chat` - Real-time chat
 
+## Database & Migrations
+
+### Database Setup
+The application uses PostgreSQL with PostGIS for location-based features. The database is automatically set up when running with Docker Compose.
+
+### Migrations
+Database schema and test data are managed through Entity Framework Core migrations:
+
+```bash
+# Apply all migrations (includes test data)
+dotnet ef database update
+
+# Create a new migration
+dotnet ef migrations add MigrationName
+
+# Rollback to a specific migration
+dotnet ef database update MigrationName
+```
+
+### Test Data Migration
+The application includes a dedicated migration `20250918052911_AddTestUsers` that creates test users Alice and Bob with:
+- **Complete user profiles** with proper authentication
+- **Profile photos** (placeholder images for testing)
+- **Geolocation data** (both located in NYC)
+- **Compatible matching preferences** (Alice seeks males, Bob seeks females)
+
+This test data is created via database migration, ensuring it's consistently available across all environments.
+
+### Manual Test Data Management
+If you need to add more test photos or data:
+
+1. **Add photos to existing users:**
+   ```sql
+   INSERT INTO photos ("Id", "UserId", "Data", "ContentType", "SizeBytes", "IsPrimary", "UploadedAt")
+   VALUES (gen_random_uuid(), 'user-id-here', decode('base64-data-here', 'base64'), 'image/jpeg', file_size, false, NOW());
+   ```
+
+2. **Update user photos from assets:**
+   ```bash
+   # Convert image to base64
+   base64 -i path/to/image.jpg | tr -d '\n' > image.b64
+
+   # Use the base64 content in the SQL above
+   ```
+
 ## Database Schema
 
 - **users** - ASP.NET Identity users
@@ -152,7 +197,7 @@ Currently stores photos as BLOB data in PostgreSQL. For production, consider mov
 ## Testing
 
 ### Test Credentials
-The application comes with pre-seeded test users for easy testing:
+The application comes with test users created via database migrations for easy testing:
 
 **Alice (Female, 25)**
 - Email: `alice@example.com`

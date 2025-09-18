@@ -87,6 +87,46 @@ namespace App.Migrations
                             ST_GeomFromText('POINT(-74.0050 40.7130)', 4326), -- NYC
                             NOW()
                         );
+
+                        -- Insert Alice's profile photo (placeholder)
+                        INSERT INTO photos (""Id"", ""UserId"", ""Data"", ""ContentType"", ""SizeBytes"", ""IsPrimary"", ""UploadedAt"")
+                        VALUES (
+                            gen_random_uuid(),
+                            'a155f3a5-ef09-469a-909b-95fd7a8d8011',
+                            decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAGAhhtQHgAAAABJRU5ErkJggg==', 'base64'),
+                            'image/png',
+                            68,
+                            true,
+                            NOW()
+                        );
+
+                        -- Insert Bob's profile
+                        INSERT INTO profiles (""UserId"", ""DisplayName"", ""BirthDate"", ""Gender"", ""Bio"", ""SearchGender"", ""AgeMin"", ""AgeMax"", ""MaxDistanceKm"", ""Location"", ""LocationUpdatedAt"")
+                        VALUES (
+                            '57eacf2a-42bf-4ad6-8ed2-5a775117aa59',
+                            'Bob',
+                            '1996-01-01'::date,
+                            1, -- Male
+                            'Hi, I''m Bob! Looking to meet new people in the city.',
+                            2, -- Looking for Female
+                            22,
+                            35,
+                            25,
+                            ST_GeomFromText('POINT(-74.0050 40.7130)', 4326), -- NYC
+                            NOW()
+                        );
+
+                        -- Insert Bob's profile photo (placeholder)
+                        INSERT INTO photos (""Id"", ""UserId"", ""Data"", ""ContentType"", ""SizeBytes"", ""IsPrimary"", ""UploadedAt"")
+                        VALUES (
+                            gen_random_uuid(),
+                            '57eacf2a-42bf-4ad6-8ed2-5a775117aa59',
+                            decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64'),
+                            'image/png',
+                            68,
+                            true,
+                            NOW()
+                        );
                     END IF;
                 END $$;
             ");
