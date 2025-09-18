@@ -20,10 +20,13 @@ const Home = () => {
   const loadCandidates = async () => {
     try {
       setLoading(true);
+      console.log('Loading candidates...');
       const profiles = await FeedService.getCandidates(50, 1, 20);
+      console.log('Candidates loaded:', profiles.length, profiles);
       setCandidates(profiles);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load candidates');
+      console.error('Failed to load candidates:', error);
+      Alert.alert('Error', `Failed to load candidates: ${error}`);
     } finally {
       setLoading(false);
     }

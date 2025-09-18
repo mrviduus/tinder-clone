@@ -13,7 +13,7 @@ public class FeedService
         _context = context;
     }
 
-    public async Task<List<CandidateResponse>> GetCandidatesAsync(Guid userId, int radiusKm = 50, int page = 1, int pageSize = 20)
+    public async Task<List<FeedProfileResponse>> GetCandidatesAsync(Guid userId, int radiusKm = 50, int page = 1, int pageSize = 20)
     {
         // Get current user's profile
         var myProfile = await _context.Profiles
@@ -21,7 +21,7 @@ public class FeedService
 
         if (myProfile?.Location == null)
         {
-            return new List<CandidateResponse>(); // No location, return empty feed
+            return new List<FeedProfileResponse>(); // No location, return empty feed
         }
 
         var effectiveRadius = Math.Min(myProfile.MaxDistanceKm, radiusKm) * 1000; // Convert to meters
@@ -52,6 +52,7 @@ public class FeedService
                 p.DisplayName,
                 p.BirthDate,
                 p.Gender,
+                p.Bio,
                 p.Location,
                 p.LocationUpdatedAt
             })
@@ -73,34 +74,38 @@ public class FeedService
             .Take(pageSize)
             .ToList();
 
-        var result = new List<CandidateResponse>();
+        var result = new List<FeedProfileResponse>();
 
         foreach (var candidate in filteredCandidates)
         {
-            var age = DateTime.UtcNow.Year - candidate.BirthDate.Year;
-            if (candidate.BirthDate.AddYears(age) > DateTime.UtcNow) age--;
+            // Get all photos for this candidate
+            var photos = await _context.Photos
+                .Where(p => p.UserId == candidate.UserId)
+                .OrderByDescending(p => p.IsPrimary)
+                .ThenBy(p => p.UploadedAt)
+                .Select(p => new FeedPhotoResponse
+                {
+                    PhotoId = p.Id.ToString(),
+                    UserId = p.UserId.ToString(),
+                    PhotoData = Convert.ToBase64String(p.Data),
+                    UploadedAt = p.UploadedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    IsMain = p.IsPrimary
+                })
+                .ToListAsync();
 
-            var distanceKm = candidate.Location!.Distance(myProfile.Location) / 1000.0;
-
-            // Get primary photo URL
-            var primaryPhotoId = await _context.Photos
-                .Where(p => p.UserId == candidate.UserId && p.IsPrimary)
-                .Select(p => p.Id)
-                .FirstOrDefaultAsync();
-
-            string? primaryPhotoUrl = null;
-            if (primaryPhotoId != Guid.Empty)
+            result.Add(new FeedProfileResponse
             {
-                primaryPhotoUrl = $"/api/users/{candidate.UserId}/photos/{primaryPhotoId}";
-            }
-
-            result.Add(new CandidateResponse
-            {
-                UserId = candidate.UserId,
+                UserId = candidate.UserId.ToString(),
                 DisplayName = candidate.DisplayName,
-                Age = age,
-                DistanceKm = Math.Round(distanceKm, 1),
-                PrimaryPhotoUrl = primaryPhotoUrl
+                BirthDate = candidate.BirthDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                Gender = candidate.Gender,
+                Bio = candidate.Bio,
+                JobTitle = null, // Could add these fields to Profile table later
+                Company = null,
+                School = null,
+                Location = null, // Could include lat/lng if needed
+                Photos = photos,
+                IsCurrentUser = false
             });
         }
 
