@@ -100,22 +100,6 @@ namespace App.Migrations
                             NOW()
                         );
 
-                        -- Insert Bob's profile
-                        INSERT INTO profiles (""UserId"", ""DisplayName"", ""BirthDate"", ""Gender"", ""Bio"", ""SearchGender"", ""AgeMin"", ""AgeMax"", ""MaxDistanceKm"", ""Location"", ""LocationUpdatedAt"")
-                        VALUES (
-                            '57eacf2a-42bf-4ad6-8ed2-5a775117aa59',
-                            'Bob',
-                            '1996-01-01'::date,
-                            1, -- Male
-                            'Hi, I''m Bob! Looking to meet new people in the city.',
-                            2, -- Looking for Female
-                            22,
-                            35,
-                            25,
-                            ST_GeomFromText('POINT(-74.0050 40.7130)', 4326), -- NYC
-                            NOW()
-                        );
-
                         -- Insert Bob's profile photo (placeholder)
                         INSERT INTO photos (""Id"", ""UserId"", ""Data"", ""ContentType"", ""SizeBytes"", ""IsPrimary"", ""UploadedAt"")
                         VALUES (

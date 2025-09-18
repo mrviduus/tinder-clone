@@ -269,6 +269,71 @@ const Profile = () => {
                 </View>
               )}
 
+              {/* Photo Management Section */}
+              <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
+                  Photos ({profile?.photos?.length || 0})
+                </Text>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+                    {profile?.photos?.map((photo, index) => (
+                      <View key={photo.photoId} style={{ marginRight: 10 }}>
+                        <Image
+                          source={{ uri: `data:image/jpeg;base64,${photo.photoData}` }}
+                          style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 8,
+                            borderWidth: photo.isMain ? 3 : 1,
+                            borderColor: photo.isMain ? PRIMARY_COLOR : DARK_GRAY
+                          }}
+                        />
+                        {photo.isMain && (
+                          <Text style={{
+                            fontSize: 10,
+                            textAlign: 'center',
+                            color: PRIMARY_COLOR,
+                            fontWeight: 'bold',
+                            marginTop: 2
+                          }}>
+                            Main
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+
+                    {/* Add Photo Button */}
+                    <TouchableOpacity
+                      onPress={handleImagePicker}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 8,
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: PRIMARY_COLOR,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#f8f8f8'
+                      }}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color={PRIMARY_COLOR} size="small" />
+                      ) : (
+                        <>
+                          <Icon name="plus" size={24} color={PRIMARY_COLOR} />
+                          <Text style={{ fontSize: 10, color: PRIMARY_COLOR, marginTop: 4 }}>
+                            Add Photo
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </View>
+
               <TouchableOpacity
                 style={[styles.button, { marginTop: 20 }]}
                 onPress={handleLocationUpdate}

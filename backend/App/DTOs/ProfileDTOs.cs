@@ -65,6 +65,7 @@ public class PublicProfileResponse
 public class PhotoInfo
 {
     public Guid PhotoId { get; set; }
-    public bool IsPrimary { get; set; }
+    public bool IsMain { get; set; }
     public string Url { get; set; } = string.Empty;
+    public string PhotoData { get; set; } = string.Empty; // base64 encoded
 }

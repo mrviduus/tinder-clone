@@ -31,8 +31,9 @@ public class ProfileService
             .Select(p => new PhotoInfo
             {
                 PhotoId = p.Id,
-                IsPrimary = p.IsPrimary,
-                Url = $"/api/users/{userId}/photos/{p.Id}"
+                IsMain = p.IsPrimary,
+                Url = $"/api/users/{userId}/photos/{p.Id}",
+                PhotoData = Convert.ToBase64String(p.Data)
             })
             .ToListAsync();
 
@@ -83,8 +84,9 @@ public class ProfileService
             .Select(p => new PhotoInfo
             {
                 PhotoId = p.Id,
-                IsPrimary = p.IsPrimary,
-                Url = $"/api/users/{userId}/photos/{p.Id}"
+                IsMain = p.IsPrimary,
+                Url = $"/api/users/{userId}/photos/{p.Id}",
+                PhotoData = Convert.ToBase64String(p.Data)
             })
             .ToListAsync();
 
