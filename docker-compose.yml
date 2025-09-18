@@ -1,0 +1,90 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-appdb}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-appsecret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database migration service - uses SDK image to run EF commands
+  migration:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /src/App
+    environment:
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-appdb};Username=${POSTGRES_USER:-appuser};Password=${POSTGRES_PASSWORD:-appsecret}"
+    command: ["sh", "-c", "dotnet tool install --global dotnet-ef && export PATH=\"$$PATH:/root/.dotnet/tools\" && dotnet ef database update"]
+    volumes:
+      - ./backend:/src
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - migration
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-appdb};Username=${POSTGRES_USER:-appuser};Password=${POSTGRES_PASSWORD:-appsecret}"
+      Jwt__Issuer: tinder-mvp
+      Jwt__Audience: tinder-mvp
+      Jwt__Key: ${JWT_KEY:-change-this-dev-secret-please-long-enough}
+      Jwt__AccessMinutes: 15
+      Jwt__RefreshDays: 14
+      Photos__MaxBytes: 5242880
+      Cors__AllowedOrigins__0: http://localhost:19006
+      Cors__AllowedOrigins__1: http://localhost:8081
+      Cors__AllowedOrigins__2: http://localhost:8082
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      EXPO_PUBLIC_API_BASE_URL: http://localhost:8080
+    ports:
+      - "19006:19006"  # Expo Web
+      - "19000:19000"  # Expo Dev Server
+      - "19001:19001"  # Expo Dev Tools
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    profiles:
+      - tools
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    profiles:
+      - scale
+
+volumes:
+  pgdata:

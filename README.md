@@ -1,185 +1,198 @@
-# Tinder Clone
+# Tinder MVP
 
-A React Native dating app clone built with Expo, featuring swipe gestures, matching functionality, and messaging interface.
-
-![Tinder Clone Preview](frontend/preview/tinderclone-preview.gif)
+A minimal viable Tinder-like dating application built with ASP.NET Core backend, PostgreSQL + PostGIS database, and Expo React Native frontend.
 
 ## Features
 
-- 🔥 Swipe cards interface
-- 💕 Matching system
-- 💬 Messaging functionality
-- 📱 Cross-platform (iOS, Android, Web)
-- 🎨 Modern UI design
+- ✅ User registration and authentication (JWT + refresh tokens)
+- ✅ User profiles with photos and preferences
+- ✅ Location-based candidate discovery
+- ✅ Swipe gestures (like/pass)
+- ✅ Real-time matching system
+- ✅ Live chat with SignalR
+- ✅ Message read receipts and typing indicators
+- ✅ Photo upload and management
+- ✅ Distance-based filtering
 
 ## Tech Stack
 
-- **React Native** - Cross-platform mobile development
-- **Expo** - Development platform and build tools
-- **TypeScript** - Type-safe JavaScript
-- **React Navigation** - Navigation library
-- **React Native Deck Swiper** - Card swiping functionality
+### Backend
+- ASP.NET Core (.NET 9) Web API
+- Entity Framework Core with PostgreSQL
+- PostGIS for geospatial queries
+- ASP.NET Identity for authentication
+- JWT tokens with refresh token rotation
+- SignalR for real-time chat
+- Serilog for logging
+- Health checks
 
-## Prerequisites
+### Frontend
+- Expo React Native (TypeScript)
+- React Navigation for routing
+- Zustand for state management
+- Axios for API calls
+- SignalR client for real-time features
+- React Native Reanimated for swipe gestures
 
-Before running this project, make sure you have the following installed:
+### Database
+- PostgreSQL 16 with PostGIS extension
+- Optimized for location-based queries
+- Proper indexing for performance
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+## Quick Start
 
-### For mobile development:
-- **iOS**: Xcode (macOS only)
-- **Android**: Android Studio and Android SDK
-
-## Installation
-
-1. Clone the repository:
+1. **Clone and setup environment:**
    ```bash
-   git clone https://github.com/mrviduus/tinder-clone.git
-   cd tinder-clone
+   git clone <repo>
+   cd tinder-mvp
+   cp .env.example .env
    ```
 
-2. Navigate to the frontend directory:
+2. **Start with Docker Compose:**
    ```bash
-   cd frontend
+   docker compose up --build
    ```
 
-3. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-## Running the Project
-
-### Development Server
-
-Start the Expo development server:
-
-```bash
-npm start
-# or
-yarn start
-```
-
-This will open the Expo Developer Tools in your browser.
-
-### Platform-Specific Commands
-
-#### iOS Simulator
-```bash
-npm run ios
-# or
-yarn ios
-```
-
-#### Android Emulator
-```bash
-npm run android
-# or
-yarn android
-```
-
-#### Web Browser
-```bash
-npm run web
-# or
-yarn web
-```
+3. **Access the application:**
+   - Backend API: http://localhost:8080
+   - Swagger UI: http://localhost:8080/swagger
+   - Frontend Web: http://localhost:19006
+   - pgAdmin (optional): http://localhost:5050
 
 ## Development Setup
 
-### Using Expo Go App (Recommended for beginners)
+### Prerequisites
+- Docker & Docker Compose
+- .NET 9 SDK (for local development)
+- Node.js 20+ (for local frontend development)
 
-1. Install the [Expo Go](https://expo.dev/client) app on your mobile device
-2. Run `npm start` in the project directory
-3. Scan the QR code with your device camera (iOS) or the Expo Go app (Android)
+### Backend Development
+```bash
+cd backend/App
+dotnet restore
+dotnet ef database update
+dotnet run
+```
 
-### Using Physical Device
+### Frontend Development
+```bash
+cd frontend
+npm install
+npm run start:web
+```
 
-1. Install Expo CLI globally:
-   ```bash
-   npm install -g expo-cli
-   ```
-
-2. Start the development server:
-   ```bash
-   expo start
-   ```
-
-3. Use the Expo Go app to scan the QR code
-
-### Using Simulators/Emulators
-
-#### iOS Simulator (macOS only)
-1. Install Xcode from the App Store
-2. Run `npm run ios` or press `i` in the Expo CLI
-
-#### Android Emulator
-1. Install Android Studio
-2. Set up an Android Virtual Device (AVD)
-3. Run `npm run android` or press `a` in the Expo CLI
+### Database Access
+- **Connection String:** Host=localhost;Port=5432;Database=appdb;Username=appuser;Password=appsecret
+- **pgAdmin:** http://localhost:5050 (admin@example.com / admin)
 
 ## Project Structure
 
 ```
-frontend/
-├── assets/          # Images, fonts, and other static assets
-├── components/      # Reusable React components
-├── screens/         # Screen components
-├── App.tsx         # Main app component
-├── package.json    # Dependencies and scripts
-└── tsconfig.json   # TypeScript configuration
+.
+├── docker-compose.yml          # Container orchestration
+├── .env.example               # Environment variables template
+├── requirements.md            # Detailed requirements specification
+├── backend/
+│   ├── Dockerfile
+│   └── App/                   # ASP.NET Core Web API
+│       ├── Controllers/       # API endpoints
+│       ├── Services/          # Business logic
+│       ├── Data/             # EF Core DbContext
+│       ├── Domain/           # Entity models
+│       ├── DTOs/             # Request/response models
+│       ├── Hubs/             # SignalR hubs
+│       └── Migrations/       # Database migrations
+└── frontend/
+    ├── Dockerfile
+    └── src/
+        ├── screens/          # React Native screens
+        ├── navigation/       # Navigation setup
+        ├── api/             # API layer
+        ├── store/           # Zustand stores
+        └── types/           # TypeScript types
 ```
 
-## Available Scripts
+## API Documentation
 
-- `npm start` - Start the Expo development server
-- `npm run ios` - Run on iOS simulator
-- `npm run android` - Run on Android emulator
-- `npm run web` - Run in web browser
+When running in development mode, visit http://localhost:8080/swagger for interactive API documentation.
 
-## Troubleshooting
+### Key Endpoints
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/feed` - Get potential matches
+- `POST /api/swipes` - Swipe on users
+- `GET /api/matches` - Get user's matches
+- `SignalR /hubs/chat` - Real-time chat
 
-### Common Issues
+## Database Schema
 
-1. **Metro bundler issues**: Clear cache with `expo start -c`
-2. **Node modules issues**: Delete `node_modules` and run `npm install` again
-3. **iOS build issues**: Make sure Xcode is updated to the latest version
-4. **Android build issues**: Ensure Android SDK is properly configured
+- **users** - ASP.NET Identity users
+- **profiles** - User profiles with location (PostGIS Point)
+- **photos** - Photo storage with BLOB data
+- **swipes** - User swipe history
+- **matches** - Mutual likes
+- **messages** - Chat messages with read receipts
+- **blocks** - User blocking functionality
+- **refresh_tokens** - JWT refresh token storage
 
-### Reset Project
+## Configuration
 
-If you encounter persistent issues:
+### Environment Variables
+See `.env.example` for all available configuration options.
 
-```bash
-# Clear Expo cache
-expo start -c
+Key settings:
+- `ConnectionStrings__Default` - PostgreSQL connection
+- `Jwt__Key` - JWT signing key (change in production!)
+- `Photos__MaxBytes` - Maximum photo size (5MB default)
+- `Cors__AllowedOrigins__0` - Frontend URL for CORS
 
-# Clear npm cache
-npm cache clean --force
+### Photo Storage
+Currently stores photos as BLOB data in PostgreSQL. For production, consider moving to object storage (S3, Azure Blob) with CDN.
 
-# Reinstall dependencies
-rm -rf node_modules
-npm install
-```
+## Testing
 
-## Contributing
+### Manual Testing
+1. Register two users with different email addresses
+2. Set locations for both users (Profile screen)
+3. Upload photos
+4. Swipe on each other to create a match
+5. Test real-time chat functionality
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Health Check
+Visit http://localhost:8080/healthz to verify backend health.
+
+## Production Considerations
+
+### Security
+- Change JWT secret key
+- Use HTTPS in production
+- Implement rate limiting (.NET 9+ required)
+- Add photo content validation
+- Set up proper CORS policies
+
+### Performance
+- Add Redis for SignalR backplane (horizontal scaling)
+- Move photos to object storage + CDN
+- Implement database connection pooling
+- Add caching for frequent queries
+
+### Monitoring
+- Set up application insights
+- Add structured logging
+- Monitor database performance
+- Set up health check monitoring
+
+## Known Limitations (MVP)
+
+- No push notifications
+- Basic photo validation
+- Simple matching algorithm
+- No video calls
+- No premium features
+- No social login integration
+- No email verification
+- Basic error handling on frontend
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with [Expo](https://expo.dev/)
-- UI inspiration from Tinder
-- React Native community for amazing libraries
+This is a demo/educational project. Use at your own risk.

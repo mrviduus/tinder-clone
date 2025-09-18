@@ -299,4 +299,26 @@ export default StyleSheet.create({
   iconMenu: {
     alignItems: "center",
   },
+
+  // FORM STYLES
+  container: {
+    flex: 1,
+    backgroundColor: WHITE,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: DARK_GRAY,
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    backgroundColor: WHITE,
+  },
+  buttonText: {
+    color: WHITE,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
