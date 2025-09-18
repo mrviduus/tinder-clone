@@ -22,7 +22,15 @@ const Home = () => {
       setLoading(true);
       console.log('Loading candidates...');
       const profiles = await FeedService.getCandidates(50, 1, 20);
-      console.log('Candidates loaded:', profiles.length, profiles);
+      console.log('Candidates loaded:', profiles.length);
+      profiles.forEach((profile, index) => {
+        console.log(`Candidate ${index}:`, profile);
+        console.log(`Photos for ${profile.displayName}:`, profile.photos);
+        if (profile.photos && profile.photos.length > 0) {
+          console.log('First photo:', profile.photos[0]);
+          console.log('Photo data length:', profile.photos[0].photoData?.length || 0);
+        }
+      });
       setCandidates(profiles);
     } catch (error) {
       console.error('Failed to load candidates:', error);
@@ -115,10 +123,18 @@ const Home = () => {
             const mainPhoto = item.photos?.find(p => p.isMain) || item.photos?.[0];
             const age = new Date().getFullYear() - new Date(item.birthDate).getFullYear();
 
+            console.log('Rendering card for:', item.displayName);
+            console.log('Main photo:', mainPhoto);
+            console.log('Photo data available:', !!mainPhoto?.photoData);
+            console.log('Photo data length:', mainPhoto?.photoData?.length || 0);
+
+            const imageSource = mainPhoto ? { uri: `data:image/jpeg;base64,${mainPhoto.photoData}` } : null;
+            console.log('Image source:', imageSource);
+
             return (
               <CardItem
                 hasActions
-                image={mainPhoto ? { uri: `data:image/jpeg;base64,${mainPhoto.photoData}` } : null}
+                image={imageSource}
                 name={`${item.displayName}, ${age}`}
                 description={item.bio || `${item.jobTitle || 'Professional'}${item.company ? ` at ${item.company}` : ''}`}
                 matches={item.photos?.length || 0}

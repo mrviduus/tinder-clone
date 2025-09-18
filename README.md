@@ -151,12 +151,30 @@ Currently stores photos as BLOB data in PostgreSQL. For production, consider mov
 
 ## Testing
 
+### Test Credentials
+The application comes with pre-seeded test users for easy testing:
+
+**Alice (Female, 25)**
+- Email: `alice@example.com`
+- Password: `Password123!`
+- Profile: Has multiple photos, seeks males
+
+**Bob (Male, 28)**
+- Email: `bob@example.com`
+- Password: `Password123!`
+- Profile: Has multiple photos, seeks females
+
+**Additional Test Users:**
+- `charlie@example.com` / `Password123!` (Male, 30)
+- `diana@example.com` / `Password123!` (Female, 26)
+- `eve@example.com` / `Password123!` (Female, 24)
+
 ### Manual Testing
-1. Register two users with different email addresses
-2. Set locations for both users (Profile screen)
-3. Upload photos
-4. Swipe on each other to create a match
-5. Test real-time chat functionality
+1. **Quick Test:** Login as Alice or Bob using the credentials above
+2. **Photo Testing:** Both Alice and Bob have multiple photos already uploaded
+3. **Matching:** Alice and Bob are compatible and will appear in each other's feeds
+4. **Chat Testing:** Alice and Bob already have an existing match with chat history
+5. **Full Flow:** Register new users to test the complete registration flow
 
 ### Health Check
 Visit http://localhost:8080/healthz to verify backend health.
