@@ -15,6 +15,7 @@ import {
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Icon, Message } from "../components";
 import { MessageService } from "../src/services/messageService";
+import { MatchService } from "../src/services/matchService";
 import { signalRService } from "../src/services/signalrService";
 import { useAuthStore } from "../src/store/authStore";
 import { Message as MessageType } from "../src/types/api";
@@ -140,6 +141,30 @@ const Messages = () => {
     }
   };
 
+  const handleUnmatch = async () => {
+    if (!matchId) return;
+
+    Alert.alert(
+      'Unmatch',
+      `Are you sure you want to unmatch with ${matchName}? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unmatch',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await MatchService.unmatch(matchId);
+            if (success) {
+              navigation.goBack();
+            } else {
+              Alert.alert('Error', 'Failed to unmatch');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const renderMessage = ({ item }: { item: MessageType }) => {
     const isMyMessage = item.senderId === user?.id;
 
@@ -203,7 +228,9 @@ const Messages = () => {
               <Icon name="chevron-back" color={DARK_GRAY} size={20} />
             </TouchableOpacity>
             <Text style={[styles.title, { flex: 1, textAlign: 'center' }]}>{matchName}</Text>
-            <View style={{ width: 20 }} />
+            <TouchableOpacity onPress={handleUnmatch}>
+              <Icon name="close-circle-outline" color={DARK_GRAY} size={24} />
+            </TouchableOpacity>
           </View>
 
           <FlatList

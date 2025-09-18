@@ -80,4 +80,31 @@ public class MatchService
         return await _context.Matches
             .AnyAsync(m => m.Id == matchId && (m.UserAId == userId || m.UserBId == userId));
     }
+
+    public async Task<bool> UnmatchAsync(Guid matchId, Guid userId)
+    {
+        var match = await _context.Matches
+            .Include(m => m.Messages)
+            .FirstOrDefaultAsync(m => m.Id == matchId && (m.UserAId == userId || m.UserBId == userId));
+
+        if (match == null) return false;
+
+        // Delete all messages in the match
+        _context.Messages.RemoveRange(match.Messages);
+
+        // Delete the match itself
+        _context.Matches.Remove(match);
+
+        // Delete the swipes between these users
+        var otherUserId = match.UserAId == userId ? match.UserBId : match.UserAId;
+        var swipes = await _context.Swipes
+            .Where(s => (s.SwiperId == userId && s.TargetId == otherUserId) ||
+                       (s.SwiperId == otherUserId && s.TargetId == userId))
+            .ToListAsync();
+
+        _context.Swipes.RemoveRange(swipes);
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

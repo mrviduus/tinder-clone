@@ -92,4 +92,22 @@ public class MatchesController : ControllerBase
 
         return Created($"/api/matches/{matchId}/messages", message);
     }
+
+    [HttpDelete("{matchId}")]
+    public async Task<IActionResult> Unmatch(Guid matchId)
+    {
+        var userId = GetCurrentUserId();
+        var success = await _matchService.UnmatchAsync(matchId, userId);
+
+        if (!success)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Error = "Match not found or you are not part of this match",
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+
+        return NoContent();
+    }
 }

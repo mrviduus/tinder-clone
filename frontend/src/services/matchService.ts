@@ -20,4 +20,13 @@ export class MatchService {
       return null;
     }
   }
+
+  static async unmatch(matchId: string): Promise<boolean> {
+    try {
+      await apiClient.delete(`/matches/${matchId}`);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 }
