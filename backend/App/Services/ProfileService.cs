@@ -24,6 +24,18 @@ public class ProfileService
         var age = DateTime.UtcNow.Year - profile.BirthDate.Year;
         if (profile.BirthDate.AddYears(age) > DateTime.UtcNow) age--;
 
+        var photos = await _context.Photos
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.IsPrimary)
+            .ThenBy(p => p.UploadedAt)
+            .Select(p => new PhotoInfo
+            {
+                PhotoId = p.Id,
+                IsPrimary = p.IsPrimary,
+                Url = $"/api/users/{userId}/photos/{p.Id}"
+            })
+            .ToListAsync();
+
         return new ProfileResponse
         {
             UserId = profile.UserId,
@@ -37,7 +49,8 @@ public class ProfileService
             AgeMax = profile.AgeMax,
             MaxDistanceKm = profile.MaxDistanceKm,
             HasLocation = profile.Location != null,
-            LocationUpdatedAt = profile.LocationUpdatedAt
+            LocationUpdatedAt = profile.LocationUpdatedAt,
+            Photos = photos
         };
     }
 
@@ -63,6 +76,18 @@ public class ProfileService
             }
         }
 
+        var photos = await _context.Photos
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.IsPrimary)
+            .ThenBy(p => p.UploadedAt)
+            .Select(p => new PhotoInfo
+            {
+                PhotoId = p.Id,
+                IsPrimary = p.IsPrimary,
+                Url = $"/api/users/{userId}/photos/{p.Id}"
+            })
+            .ToListAsync();
+
         return new PublicProfileResponse
         {
             UserId = profile.UserId,
@@ -70,7 +95,8 @@ public class ProfileService
             Age = age,
             Gender = profile.Gender,
             Bio = profile.Bio,
-            DistanceKm = distanceKm
+            DistanceKm = distanceKm,
+            Photos = photos
         };
     }
 

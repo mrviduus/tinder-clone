@@ -17,6 +17,7 @@ public class ProfileResponse
     public int MaxDistanceKm { get; set; }
     public bool HasLocation { get; set; }
     public DateTime? LocationUpdatedAt { get; set; }
+    public List<PhotoInfo> Photos { get; set; } = new();
 }
 
 public class UpdateProfileRequest
@@ -58,4 +59,12 @@ public class PublicProfileResponse
     public Gender Gender { get; set; }
     public string? Bio { get; set; }
     public double? DistanceKm { get; set; }
+    public List<PhotoInfo> Photos { get; set; } = new();
+}
+
+public class PhotoInfo
+{
+    public Guid PhotoId { get; set; }
+    public bool IsPrimary { get; set; }
+    public string Url { get; set; } = string.Empty;
 }

@@ -107,6 +107,53 @@ public class SeedDataService
 
         await _context.SaveChangesAsync();
 
+        // Add sample photos for users
+        if (createdUsers.Count >= 2)
+        {
+            var alice = createdUsers[0];
+            var bob = createdUsers[1];
+
+            // Create sample photos (small placeholder images)
+            var alicePhoto1 = new Photo
+            {
+                UserId = alice.Id,
+                ContentType = "image/jpeg",
+                SizeBytes = 1024,
+                Data = CreateSampleImageData("Alice", "lightblue"),
+                IsPrimary = true
+            };
+
+            var alicePhoto2 = new Photo
+            {
+                UserId = alice.Id,
+                ContentType = "image/jpeg",
+                SizeBytes = 1024,
+                Data = CreateSampleImageData("Alice 2", "pink"),
+                IsPrimary = false
+            };
+
+            var bobPhoto1 = new Photo
+            {
+                UserId = bob.Id,
+                ContentType = "image/jpeg",
+                SizeBytes = 1024,
+                Data = CreateSampleImageData("Bob", "lightgreen"),
+                IsPrimary = true
+            };
+
+            var bobPhoto2 = new Photo
+            {
+                UserId = bob.Id,
+                ContentType = "image/jpeg",
+                SizeBytes = 1024,
+                Data = CreateSampleImageData("Bob 2", "orange"),
+                IsPrimary = false
+            };
+
+            _context.Photos.AddRange(alicePhoto1, alicePhoto2, bobPhoto1, bobPhoto2);
+            await _context.SaveChangesAsync();
+        }
+
         // Create some test swipes and matches
         if (createdUsers.Count >= 4)
         {
@@ -148,5 +195,15 @@ public class SeedDataService
             _context.Messages.AddRange(messages);
             await _context.SaveChangesAsync();
         }
+    }
+
+    private static byte[] CreateSampleImageData(string text, string color)
+    {
+        // Create a minimal JPEG header and data
+        // This is a very basic placeholder - in a real app you'd use actual image processing
+        var data = new byte[1024];
+        var textBytes = System.Text.Encoding.UTF8.GetBytes($"{text}-{color}");
+        Array.Copy(textBytes, 0, data, 0, Math.Min(textBytes.Length, data.Length));
+        return data;
     }
 }
