@@ -68,7 +68,7 @@ public class AuthService
         {
             UserId = user.Id,
             DisplayName = request.DisplayName,
-            BirthDate = request.BirthDate,
+            BirthDate = DateTime.SpecifyKind(request.BirthDate, DateTimeKind.Utc),
             Gender = request.Gender
         };
 
