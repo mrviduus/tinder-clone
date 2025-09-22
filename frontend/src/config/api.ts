@@ -1,35 +1,57 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+// Dynamic API URL based on platform
+const getApiBaseUrl = () => {
+  if (Platform.OS === 'ios') {
+    // For iOS Simulator, localhost works correctly
+    // For physical iOS device, replace with your Mac's IP (e.g., 'http://192.168.1.5:8080/api')
+    return 'http://localhost:8080/api';
+  } else if (Platform.OS === 'android') {
+    // Android emulator uses special IP
+    return 'http://10.0.2.2:8080/api';
+  } else {
+    // Web
+    return 'http://localhost:8080/api';
+  }
+};
 
-// Simple storage for React Native compatibility
+const API_BASE_URL = getApiBaseUrl();
+
+// Cross-platform storage for React Native and Web
 const storage = {
-  getItem: (name: string) => {
+  getItem: async (name: string) => {
     try {
-      if (typeof localStorage !== 'undefined') {
+      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         return localStorage.getItem(name);
+      } else {
+        return await AsyncStorage.getItem(name);
       }
-      return null;
     } catch {
       return null;
     }
   },
-  setItem: (name: string, value: string) => {
+  setItem: async (name: string, value: string) => {
     try {
-      if (typeof localStorage !== 'undefined') {
+      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         localStorage.setItem(name, value);
+      } else {
+        await AsyncStorage.setItem(name, value);
       }
-    } catch {
-      // Ignore storage errors
+    } catch (error) {
+      console.error('Storage setItem error:', error);
     }
   },
-  removeItem: (name: string) => {
+  removeItem: async (name: string) => {
     try {
-      if (typeof localStorage !== 'undefined') {
+      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         localStorage.removeItem(name);
+      } else {
+        await AsyncStorage.removeItem(name);
       }
-    } catch {
-      // Ignore storage errors
+    } catch (error) {
+      console.error('Storage removeItem error:', error);
     }
   }
 };
@@ -42,8 +64,8 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(
-  (config) => {
-    const token = storage.getItem('accessToken');
+  async (config) => {
+    const token = await storage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -63,22 +85,22 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = storage.getItem('refreshToken');
+        const refreshToken = await storage.getItem('refreshToken');
         if (refreshToken) {
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
 
           const { accessToken, refreshToken: newRefreshToken } = response.data;
-          storage.setItem('accessToken', accessToken);
-          storage.setItem('refreshToken', newRefreshToken);
+          await storage.setItem('accessToken', accessToken);
+          await storage.setItem('refreshToken', newRefreshToken);
 
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        storage.removeItem('accessToken');
-        storage.removeItem('refreshToken');
+        await storage.removeItem('accessToken');
+        await storage.removeItem('refreshToken');
         // Redirect to login or emit logout event
       }
     }
@@ -87,4 +109,5 @@ apiClient.interceptors.response.use(
   }
 );
 
+export { storage };
 export default apiClient;

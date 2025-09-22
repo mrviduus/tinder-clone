@@ -14,8 +14,17 @@ export class AuthService {
   }
 
   static async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', data);
-    return response.data;
+    console.log('Login attempt with:', data.email);
+    console.log('API URL:', apiClient.defaults.baseURL);
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/login', data);
+      console.log('Login successful');
+      return response.data;
+    } catch (error: any) {
+      console.error('Login failed:', error.message);
+      console.error('Error details:', error.response?.data);
+      throw error;
+    }
   }
 
   static async refreshToken(refreshToken: string): Promise<AuthResponse> {

@@ -5,9 +5,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 A Tinder-like dating application with:
-- **Backend**: ASP.NET Core (.NET 8) Web API with PostgreSQL/PostGIS
+- **Backend**: ASP.NET Core (.NET 9) Web API with PostgreSQL/PostGIS
 - **Frontend**: Expo React Native (TypeScript) mobile app
 - **Real-time**: SignalR for live chat and notifications
+
+## CRITICAL: iOS Login Issue Fix
+
+### Problem
+iOS app cannot login while web works. This is due to API URL configuration.
+
+### Solution
+The API URL must be configured correctly for iOS in `/frontend/src/config/api.ts`:
+
+```typescript
+const getApiBaseUrl = () => {
+  if (Platform.OS === 'ios') {
+    // For iOS Simulator on same machine
+    return 'http://localhost:8080/api';
+    // For physical iOS device, use Mac's IP:
+    // return 'http://10.39.42.221:8080/api';
+  } else if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:8080/api';
+  } else {
+    return 'http://localhost:8080/api';
+  }
+};
+```
+
+### Backend Must Listen on All Interfaces
+```bash
+ASPNETCORE_URLS=http://+:8080 ASPNETCORE_ENVIRONMENT=Development dotnet run
+```
 
 ## Common Development Commands
 
@@ -100,12 +128,20 @@ PostgreSQL with PostGIS extension:
 
 ## Test Users
 
-The database includes test users (created via migrations):
-- alice@example.com / Password123!
-- bob@example.com / Password123!
-- charlie@example.com / Password123!
-- diana@example.com / Password123!
-- eve@example.com / Password123!
+The database includes test users (all with password `Password123!`):
+- alice@example.com - Female, 28, San Francisco
+- bob@example.com - Male, 32, San Francisco
+- charlie@example.com - Male, 29, San Francisco
+- diana@example.com - Female, 26, San Francisco
+- eve@example.com - Female, 31, San Francisco
+- frank@example.com - Male, 27, San Francisco
+- grace@example.com - Female, 30, San Francisco
+- henry@example.com - Male, 34, San Francisco
+
+To apply test data:
+```bash
+docker exec -i tinder-clone-db-1 psql -U appuser -d appdb < backend/App/Migrations/AddCompleteTestData.sql
+```
 
 ## Key Implementation Details
 
@@ -130,3 +166,29 @@ The database includes test users (created via migrations):
 2. Refresh tokens are rotated on use
 3. Frontend automatically refreshes expired tokens
 4. SignalR uses JWT for authentication
+
+## Troubleshooting
+
+### Common Issues and Fixes
+
+1. **.NET Version Mismatch**
+   - Error: Project targets .NET 8 but only .NET 9 installed
+   - Fix: Update all .csproj files to `<TargetFramework>net9.0</TargetFramework>`
+
+2. **DateTime UTC Error**
+   - Error: "Cannot write DateTime with Kind=Unspecified to PostgreSQL"
+   - Fix: Use `DateTime.SpecifyKind(date, DateTimeKind.Utc)` in AuthService.cs
+
+3. **iOS Cannot Login**
+   - Ensure backend runs with `ASPNETCORE_URLS=http://+:8080`
+   - Update `/frontend/src/config/api.ts` with correct iOS URL
+   - For simulator: `http://localhost:8080/api`
+   - For device: `http://YOUR_MAC_IP:8080/api`
+
+4. **Docker Connection Issues**
+   - Restart Docker Desktop
+   - Clean rebuild: `docker-compose down -v && docker-compose up --build`
+
+5. **Missing Test Data**
+   - Apply migrations: `docker exec -i tinder-clone-db-1 psql -U appuser -d appdb < backend/App/Migrations/AddCompleteTestData.sql`
+- to memorize

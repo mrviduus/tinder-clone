@@ -17,7 +17,7 @@ services:
 
   # Database migration service - uses SDK image to run EF commands
   migration:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
+    image: mcr.microsoft.com/dotnet/sdk:9.0
     working_dir: /src/App
     environment:
       ConnectionStrings__Default: "Host=db;Port=5432;Database=${POSTGRES_DB:-appdb};Username=${POSTGRES_USER:-appuser};Password=${POSTGRES_PASSWORD:-appsecret}"

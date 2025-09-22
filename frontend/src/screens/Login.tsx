@@ -7,7 +7,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 import { LoginRequest, Gender } from '../types/api';
@@ -35,9 +37,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const authResponse = await AuthService.login(loginData);
 
       // Store token immediately for subsequent API calls
-      if (typeof localStorage !== 'undefined') {
+      if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
         localStorage.setItem('accessToken', authResponse.accessToken);
         localStorage.setItem('refreshToken', authResponse.refreshToken);
+      } else {
+        await AsyncStorage.setItem('accessToken', authResponse.accessToken);
+        await AsyncStorage.setItem('refreshToken', authResponse.refreshToken);
       }
 
       // Get user profile after setting the token
