@@ -42,9 +42,12 @@ const Home = () => {
 
   const handleSwipe = async (direction: SwipeDirection, profile: Profile) => {
     try {
+      // Convert enum to string for backend API
+      const directionString = direction === SwipeDirection.Like ? 'like' : 'pass';
+
       const result = await SwipeService.processSwipe({
         targetUserId: profile.userId,
-        direction,
+        direction: directionString,
       });
 
       if (result.isMatch) {
@@ -56,8 +59,25 @@ const Home = () => {
         const newCandidates = await FeedService.getCandidates(50, Math.floor(candidates.length / 20) + 1, 20);
         setCandidates(prev => [...prev, ...newCandidates]);
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to process swipe');
+    } catch (error: any) {
+      console.error('Swipe failed:', error);
+
+      // Provide more specific error messages
+      if (error.response?.status === 401) {
+        Alert.alert('Session Expired', 'Please login again.');
+      } else if (error.response?.status === 429) {
+        Alert.alert('Slow Down', 'You\'re swiping too fast. Take a break!');
+      } else if (error.message?.includes('Network')) {
+        Alert.alert('Connection Issue', 'Check your internet connection and try again.');
+
+        // Queue for offline processing
+        await SwipeService.queueSwipe({
+          targetUserId: profile.userId,
+          direction: directionString,
+        });
+      } else {
+        Alert.alert('Error', 'Failed to process swipe. Please try again.');
+      }
     }
   };
 

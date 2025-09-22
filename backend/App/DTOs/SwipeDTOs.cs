@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using App.Domain;
 
 namespace App.DTOs;
@@ -14,8 +15,18 @@ public class SwipeRequest
 
 public class SwipeResponse
 {
+    [JsonIgnore]
     public bool Matched { get; set; }
+
+    [JsonIgnore]
     public Guid? MatchId { get; set; }
+
+    // Only expose the camelCase properties for JSON serialization
+    [JsonPropertyName("isMatch")]
+    public bool isMatch => Matched;
+
+    [JsonPropertyName("matchId")]
+    public string? matchId => MatchId?.ToString();
 }
 
 public class MatchResponse

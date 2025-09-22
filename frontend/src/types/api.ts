@@ -77,7 +77,7 @@ export interface UpdateLocationRequest {
 
 export interface SwipeRequest {
   targetUserId: string;
-  direction: SwipeDirection;
+  direction: string; // "like" or "pass" - backend expects string
 }
 
 export enum SwipeDirection {
