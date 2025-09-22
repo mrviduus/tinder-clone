@@ -1,13 +1,33 @@
 import * as signalR from '@microsoft/signalr';
+import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
 class SignalRService {
   private connection: signalR.HubConnection | null = null;
   private messageCallbacks: ((message: any) => void)[] = [];
   private typingCallbacks: ((data: any) => void)[] = [];
+  private isConnecting = false;
+
+  private getHubUrl(): string {
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:8080/hubs/chat';
+    } else if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8080/hubs/chat';
+    } else {
+      return 'http://localhost:8080/hubs/chat';
+    }
+  }
 
   async connect(): Promise<void> {
+    // Check if already connected
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
+      console.log('SignalR already connected');
+      return;
+    }
+
+    // Prevent multiple simultaneous connection attempts
+    if (this.isConnecting) {
+      console.log('SignalR connection already in progress');
       return;
     }
 
@@ -16,26 +36,53 @@ class SignalRService {
       throw new Error('No access token available');
     }
 
-    this.connection = new signalR.HubConnectionBuilder()
-      .withUrl('http://localhost:8080/hubs/chat', {
-        accessTokenFactory: () => accessToken,
-      })
-      .withAutomaticReconnect()
-      .build();
+    this.isConnecting = true;
 
-    this.connection.on('ReceiveMessage', (message) => {
-      this.messageCallbacks.forEach(callback => callback(message));
-    });
+    try {
+      const hubUrl = this.getHubUrl();
+      console.log('Connecting to SignalR hub:', hubUrl);
 
-    this.connection.on('UserTyping', (data) => {
-      this.typingCallbacks.forEach(callback => callback(data));
-    });
+      this.connection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl, {
+          accessTokenFactory: () => accessToken,
+          withCredentials: true,
+        })
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
 
-    this.connection.on('UserStoppedTyping', (data) => {
-      this.typingCallbacks.forEach(callback => callback({ ...data, isTyping: false }));
-    });
+      // Set up event handlers before starting connection
+      this.connection.on('MessageReceived', (message) => {
+        console.log('Message received via SignalR:', message);
+        this.messageCallbacks.forEach(callback => callback(message));
+      });
 
-    await this.connection.start();
+      this.connection.on('Typing', (data) => {
+        console.log('Typing indicator received:', data);
+        this.typingCallbacks.forEach(callback => callback(data));
+      });
+
+      this.connection.onreconnecting(() => {
+        console.log('SignalR reconnecting...');
+      });
+
+      this.connection.onreconnected(() => {
+        console.log('SignalR reconnected');
+      });
+
+      this.connection.onclose((error) => {
+        console.log('SignalR connection closed', error);
+        this.isConnecting = false;
+      });
+
+      await this.connection.start();
+      console.log('SignalR connected successfully');
+    } catch (error) {
+      console.error('Failed to connect to SignalR:', error);
+      throw error;
+    } finally {
+      this.isConnecting = false;
+    }
   }
 
   async disconnect(): Promise<void> {
@@ -47,7 +94,16 @@ class SignalRService {
 
   async joinMatch(matchId: string): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('JoinMatch', matchId);
+      try {
+        console.log('Joining match:', matchId);
+        await this.connection.invoke('JoinMatch', matchId);
+        console.log('Successfully joined match:', matchId);
+      } catch (error) {
+        console.error('Failed to join match:', error);
+        throw error;
+      }
+    } else {
+      console.warn('Cannot join match - not connected to SignalR');
     }
   }
 
@@ -58,19 +114,52 @@ class SignalRService {
 
   async sendTyping(matchId: string): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('Typing', {
-        matchId: matchId,
-        isTyping: true
-      });
+      try {
+        console.log('Sending typing indicator for match:', matchId);
+        await this.connection.invoke('Typing', {
+          matchId: matchId,
+          isTyping: true
+        });
+      } catch (error) {
+        console.error('Failed to send typing indicator:', error);
+      }
+    } else {
+      console.warn('Cannot send typing - not connected to SignalR');
     }
   }
 
   async stopTyping(matchId: string): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('Typing', {
-        matchId: matchId,
-        isTyping: false
-      });
+      try {
+        console.log('Stopping typing indicator for match:', matchId);
+        await this.connection.invoke('Typing', {
+          matchId: matchId,
+          isTyping: false
+        });
+      } catch (error) {
+        console.error('Failed to stop typing indicator:', error);
+      }
+    } else {
+      console.warn('Cannot stop typing - not connected to SignalR');
+    }
+  }
+
+  async sendMessage(matchId: string, text: string, photoId?: string): Promise<void> {
+    if (this.connection?.state === signalR.HubConnectionState.Connected) {
+      try {
+        console.log('Sending message via SignalR:', { matchId, text });
+        await this.connection.invoke('SendMessage', {
+          matchId: matchId,
+          text: text,
+          photoId: photoId
+        });
+        console.log('Message sent successfully');
+      } catch (error) {
+        console.error('Failed to send message via SignalR:', error);
+        throw error;
+      }
+    } else {
+      throw new Error('Not connected to SignalR');
     }
   }
 
@@ -96,6 +185,30 @@ class SignalRService {
 
   getConnectionState(): signalR.HubConnectionState {
     return this.connection?.state || signalR.HubConnectionState.Disconnected;
+  }
+
+  async ensureConnected(): Promise<void> {
+    const maxRetries = 3;
+    let retries = 0;
+
+    while (retries < maxRetries) {
+      if (this.connection?.state === signalR.HubConnectionState.Connected) {
+        return;
+      }
+
+      try {
+        await this.connect();
+        return;
+      } catch (error) {
+        retries++;
+        console.error(`Connection attempt ${retries} failed:`, error);
+        if (retries >= maxRetries) {
+          throw new Error('Failed to establish SignalR connection after multiple attempts');
+        }
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+      }
+    }
   }
 }
 

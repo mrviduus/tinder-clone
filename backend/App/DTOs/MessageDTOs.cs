@@ -5,13 +5,28 @@ namespace App.DTOs;
 
 public class MessageResponse
 {
+    [JsonPropertyName("messageId")]
     public Guid Id { get; set; }
+
+    [JsonPropertyName("matchId")]
     public Guid MatchId { get; set; }
+
+    [JsonPropertyName("senderId")]
     public Guid SenderId { get; set; }
+
+    [JsonPropertyName("content")]
     public string? Content { get; set; }
+
+    [JsonPropertyName("imagePhotoId")]
     public Guid? ImagePhotoId { get; set; }
+
+    [JsonPropertyName("sentAt")]
     public DateTime SentAt { get; set; }
+
+    [JsonPropertyName("deliveredAt")]
     public DateTime? DeliveredAt { get; set; }
+
+    [JsonPropertyName("readAt")]
     public DateTime? ReadAt { get; set; }
 }
 

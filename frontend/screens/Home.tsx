@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { View, ImageBackground, ActivityIndicator, Alert, Text } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import Swiper from "react-native-deck-swiper";
 import { City, Filters, CardItem } from "../components";
 import { FeedService } from "../src/services/feedService";
 import { SwipeService } from "../src/services/swipeService";
+import { MatchService } from "../src/services/matchService";
 import { Profile, SwipeDirection } from "../src/types/api";
 import styles, { PRIMARY_COLOR, WHITE } from "../assets/styles";
 
 const Home = () => {
+  const navigation = useNavigation();
   const [swiper, setSwiper] = useState<any>(null);
   const [candidates, setCandidates] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +54,33 @@ const Home = () => {
       });
 
       if (result.isMatch) {
-        Alert.alert('🎉 It\'s a Match!', `You and ${profile.displayName} liked each other!`);
+        // Fetch match details to get the proper match ID and user info
+        const matches = await MatchService.getMatches();
+        const newMatch = matches.find(m =>
+          m.otherUserId === profile.userId ||
+          m.matchId === result.matchId
+        );
+
+        Alert.alert(
+          '🎉 It\'s a Match!',
+          `You and ${profile.displayName} liked each other!`,
+          [
+            {
+              text: 'Keep Swiping',
+              style: 'cancel'
+            },
+            {
+              text: 'Send Message',
+              onPress: () => {
+                // Navigate to Messages with match info
+                navigation.navigate('Messages' as never, {
+                  matchId: result.matchId || newMatch?.matchId,
+                  matchName: profile.displayName
+                } as never);
+              }
+            }
+          ]
+        );
       }
 
       // Load more candidates if running low

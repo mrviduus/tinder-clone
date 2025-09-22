@@ -64,7 +64,8 @@ const Messages = () => {
     try {
       setLoading(true);
       const messagesData = await MessageService.getMessages(matchId);
-      setMessages(messagesData.reverse());
+      // Messages come from backend already sorted by SentAt ascending
+      setMessages(messagesData);
       // Auto-scroll to bottom after loading
       setTimeout(() => {
         if (flatListRef.current && messagesData.length > 0) {
@@ -82,22 +83,53 @@ const Messages = () => {
     if (!matchId) return;
 
     try {
+      // Ensure connection is established
       await signalRService.connect();
+
+      // Join the match group
       await signalRService.joinMatch(matchId);
 
+      // Subscribe to message events
       const unsubscribeMessage = signalRService.onMessage((message: MessageType) => {
-        if (message.senderId !== user?.id) {
-          setMessages(prev => [...prev, message]);
-          // Auto-scroll when new message received
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
+        console.log('Received message in component:', message);
+        setMessages(prev => {
+          // Normalize the message ID field
+          const messageId = message.messageId || (message as any).id;
+          const exists = prev.some(m => {
+            const mId = m.messageId || (m as any).id;
+            return mId === messageId;
+          });
+
+          if (exists) {
+            console.log('Message already exists, skipping');
+            return prev;
+          }
+
+          console.log('Adding new message to chat');
+          return [...prev, message];
+        });
+
+        // Auto-scroll to the latest message
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       });
 
+      // Subscribe to typing events
       const unsubscribeTyping = signalRService.onTyping((data: any) => {
-        if (data.userId !== user?.id) {
-          setIsTyping(data.isTyping !== false);
+        console.log('Typing event received:', data);
+        // Check both possible field name formats
+        const typingUserId = data.UserId || data.userId;
+        const typingMatchId = data.MatchId || data.matchId;
+        const isTyping = data.IsTyping !== undefined ? data.IsTyping : data.isTyping;
+
+        if (typingUserId !== user?.id && typingMatchId === matchId) {
+          setIsTyping(isTyping === true);
+
+          // Auto-hide typing indicator after 3 seconds
+          if (isTyping) {
+            setTimeout(() => setIsTyping(false), 3000);
+          }
         }
       });
 
@@ -107,6 +139,7 @@ const Messages = () => {
       };
     } catch (error) {
       console.error('SignalR setup error:', error);
+      Alert.alert('Connection Error', 'Failed to connect to chat server. Please try again.');
     }
   };
 
@@ -116,25 +149,41 @@ const Messages = () => {
     const messageText = newMessage.trim();
     setNewMessage('');
     setSending(true);
+
+    // Optimistically add message to UI
+    const optimisticMessage: MessageType = {
+      messageId: `temp-${Date.now()}`,
+      matchId,
+      senderId: user?.id || '',
+      content: messageText,
+      sentAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    // Auto-scroll immediately
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 50);
+
     Keyboard.dismiss();
 
     try {
-      const sentMessage = await MessageService.sendMessage({
-        matchId,
-        text: messageText,
-      });
+      // Send via SignalR - the real message will come back through MessageReceived event
+      await signalRService.sendMessage(matchId, messageText);
 
-      if (sentMessage) {
-        setMessages(prev => [...prev, sentMessage]);
-        // Auto-scroll after sending
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
+      // Remove optimistic message when real one arrives (handled in setupSignalR)
+      setMessages(prev => prev.filter(m => m.messageId !== optimisticMessage.messageId));
 
+      // Stop typing indicator
       await signalRService.stopTyping(matchId);
     } catch (error) {
-      Alert.alert('Error', 'Failed to send message');
+      console.error('Failed to send message:', error);
+
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.messageId !== optimisticMessage.messageId));
+
+      Alert.alert('Error', 'Failed to send message. Please check your connection.');
       setNewMessage(messageText);
     } finally {
       setSending(false);
@@ -146,21 +195,33 @@ const Messages = () => {
 
     if (!matchId) return;
 
-    if (text.length > 0) {
-      await signalRService.sendTyping(matchId);
+    try {
+      if (text.length > 0 && !sending) {
+        // Send typing indicator
+        await signalRService.sendTyping(matchId);
 
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
 
-      typingTimeoutRef.current = setTimeout(async () => {
+        // Set timeout to stop typing after 2 seconds of inactivity
+        typingTimeoutRef.current = setTimeout(async () => {
+          try {
+            await signalRService.stopTyping(matchId);
+          } catch (error) {
+            console.error('Failed to stop typing indicator:', error);
+          }
+        }, 2000);
+      } else if (text.length === 0) {
+        // Stop typing when text is cleared
         await signalRService.stopTyping(matchId);
-      }, 2000);
-    } else {
-      await signalRService.stopTyping(matchId);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
       }
+    } catch (error) {
+      console.error('Failed to send typing indicator:', error);
     }
   };
 
@@ -397,11 +458,21 @@ const Messages = () => {
                 onChangeText={handleTyping}
                 multiline
                 textAlignVertical="center"
-                returnKeyType="default"
+                returnKeyType="send"
                 blurOnSubmit={false}
-                onSubmitEditing={() => {
-                  if (newMessage.trim()) {
+                onSubmitEditing={(e) => {
+                  // Send message on Enter key (without Shift)
+                  if (newMessage.trim() && !e.nativeEvent.text.includes('\n')) {
                     sendMessage();
+                  }
+                }}
+                onKeyPress={(e) => {
+                  // Web-specific: Handle Enter key
+                  if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                    e.preventDefault();
+                    if (newMessage.trim()) {
+                      sendMessage();
+                    }
                   }
                 }}
               />
