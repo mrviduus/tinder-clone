@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace App.DTOs;
 
@@ -19,8 +20,10 @@ public class SendMessageRequest
     [Required]
     public Guid MatchId { get; set; }
 
+    [JsonPropertyName("text")]
     public string? Text { get; set; }
 
+    [JsonPropertyName("photoId")]
     public Guid? PhotoId { get; set; }
 }
 

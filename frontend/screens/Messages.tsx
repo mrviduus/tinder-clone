@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import {
-  ScrollView,
   Text,
   TouchableOpacity,
-  ImageBackground,
   View,
   FlatList,
   TextInput,
@@ -11,15 +9,20 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
+  Keyboard,
+  Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { Icon, Message } from "../components";
+import { Icon } from "../components";
 import { MessageService } from "../src/services/messageService";
 import { MatchService } from "../src/services/matchService";
 import { signalRService } from "../src/services/signalrService";
 import { useAuthStore } from "../src/store/authStore";
 import { Message as MessageType } from "../src/types/api";
 import styles, { DARK_GRAY, PRIMARY_COLOR, WHITE } from "../assets/styles";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const Messages = () => {
   const route = useRoute();
@@ -49,6 +52,9 @@ const Messages = () => {
 
     return () => {
       signalRService.leaveMatch(matchId);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [matchId]);
 
@@ -58,7 +64,13 @@ const Messages = () => {
     try {
       setLoading(true);
       const messagesData = await MessageService.getMessages(matchId);
-      setMessages(messagesData.reverse()); // Reverse to show latest at bottom
+      setMessages(messagesData.reverse());
+      // Auto-scroll to bottom after loading
+      setTimeout(() => {
+        if (flatListRef.current && messagesData.length > 0) {
+          flatListRef.current.scrollToEnd({ animated: false });
+        }
+      }, 100);
     } catch (error) {
       Alert.alert('Error', 'Failed to load messages');
     } finally {
@@ -74,8 +86,13 @@ const Messages = () => {
       await signalRService.joinMatch(matchId);
 
       const unsubscribeMessage = signalRService.onMessage((message: MessageType) => {
-        setMessages(prev => [...prev, message]);
-        setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
+        if (message.senderId !== user?.id) {
+          setMessages(prev => [...prev, message]);
+          // Auto-scroll when new message received
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
       });
 
       const unsubscribeTyping = signalRService.onTyping((data: any) => {
@@ -99,18 +116,26 @@ const Messages = () => {
     const messageText = newMessage.trim();
     setNewMessage('');
     setSending(true);
+    Keyboard.dismiss();
 
     try {
-      await MessageService.sendMessage({
+      const sentMessage = await MessageService.sendMessage({
         matchId,
-        content: messageText,
+        text: messageText,
       });
 
-      // Stop typing indicator
+      if (sentMessage) {
+        setMessages(prev => [...prev, sentMessage]);
+        // Auto-scroll after sending
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+
       await signalRService.stopTyping(matchId);
     } catch (error) {
       Alert.alert('Error', 'Failed to send message');
-      setNewMessage(messageText); // Restore message on error
+      setNewMessage(messageText);
     } finally {
       setSending(false);
     }
@@ -124,12 +149,10 @@ const Messages = () => {
     if (text.length > 0) {
       await signalRService.sendTyping(matchId);
 
-      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
 
-      // Set new timeout to stop typing after 2 seconds
       typingTimeoutRef.current = setTimeout(async () => {
         await signalRService.stopTyping(matchId);
       }, 2000);
@@ -169,30 +192,36 @@ const Messages = () => {
     const isMyMessage = item.senderId === user?.id;
 
     return (
-      <View style={{
-        alignItems: isMyMessage ? 'flex-end' : 'flex-start',
-        marginVertical: 4,
-        marginHorizontal: 16,
-      }}>
+      <View
+        style={{
+          alignItems: isMyMessage ? 'flex-end' : 'flex-start',
+          marginVertical: 6,
+          marginHorizontal: 16,
+        }}
+      >
         <View style={{
           backgroundColor: isMyMessage ? PRIMARY_COLOR : '#f0f0f0',
           padding: 12,
-          borderRadius: 16,
-          maxWidth: '80%',
+          borderRadius: 18,
+          maxWidth: '75%',
+          minWidth: 80,
         }}>
           <Text style={{
             color: isMyMessage ? WHITE : '#000',
             fontSize: 16,
+            lineHeight: 20,
           }}>
             {item.content}
           </Text>
           <Text style={{
-            color: isMyMessage ? WHITE : DARK_GRAY,
-            fontSize: 12,
+            color: isMyMessage ? 'rgba(255,255,255,0.7)' : '#999',
+            fontSize: 11,
             marginTop: 4,
-            opacity: 0.7,
           }}>
-            {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(item.sentAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
           </Text>
         </View>
       </View>
@@ -201,103 +230,210 @@ const Messages = () => {
 
   if (loading) {
     return (
-      <ImageBackground
-        source={require("../assets/images/bg.png")}
-        style={styles.bg}
-      >
-        <View style={[styles.containerMessages, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: WHITE }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-          <Text style={{ color: WHITE, marginTop: 10 }}>Loading messages...</Text>
+          <Text style={{ color: DARK_GRAY, marginTop: 10 }}>Loading messages...</Text>
         </View>
-      </ImageBackground>
+      </SafeAreaView>
     );
   }
 
+  // Calculate heights for proper layout
+  const HEADER_HEIGHT = 60;
+  const INPUT_CONTAINER_HEIGHT = 80;
+  const SAFE_AREA_BOTTOM = Platform.OS === 'ios' ? 34 : 0;
+  const MESSAGE_CONTAINER_HEIGHT = SCREEN_HEIGHT - HEADER_HEIGHT - INPUT_CONTAINER_HEIGHT - SAFE_AREA_BOTTOM - 100;
+
   return (
-    <ImageBackground
-      source={require("../assets/images/bg.png")}
-      style={styles.bg}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: WHITE }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <View style={styles.containerMessages}>
-          <View style={styles.top}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icon name="chevron-back" color={DARK_GRAY} size={20} />
+        <View style={{ flex: 1, backgroundColor: WHITE }}>
+          {/* Fixed Header */}
+          <View style={{
+            height: HEADER_HEIGHT,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: '#e0e0e0',
+            backgroundColor: WHITE,
+          }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ padding: 8 }}
+            >
+              <Icon name="chevron-back" color={DARK_GRAY} size={24} />
             </TouchableOpacity>
-            <Text style={[styles.title, { flex: 1, textAlign: 'center' }]}>{matchName}</Text>
-            <TouchableOpacity onPress={handleUnmatch}>
+            <Text style={{
+              flex: 1,
+              fontSize: 18,
+              fontWeight: '600',
+              textAlign: 'center',
+              color: '#000',
+            }}>
+              {matchName}
+            </Text>
+            <TouchableOpacity
+              onPress={handleUnmatch}
+              testID="unmatch-button"
+              style={{ padding: 8 }}
+            >
               <Icon name="close-circle-outline" color={DARK_GRAY} size={24} />
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.messageId}
-            renderItem={renderMessage}
-            contentContainerStyle={{ paddingVertical: 16 }}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-          />
+          {/* Scrollable Messages Container with Fixed Height */}
+          <View style={{
+            flex: 1,
+            maxHeight: MESSAGE_CONTAINER_HEIGHT,
+            backgroundColor: '#f8f8f8',
+          }}>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.messageId || String(Math.random())}
+              renderItem={renderMessage}
+              contentContainerStyle={{
+                paddingVertical: 16,
+                flexGrow: 1,
+                justifyContent: messages.length > 0 ? 'flex-start' : 'center',
+              }}
+              showsVerticalScrollIndicator={true}
+              maintainVisibleContentPosition={{
+                minIndexForVisible: 0,
+                autoscrollToTopThreshold: 10,
+              }}
+              onContentSizeChange={() => {
+                if (messages.length > 0) {
+                  flatListRef.current?.scrollToEnd({ animated: false });
+                }
+              }}
+              onLayout={() => {
+                if (messages.length > 0) {
+                  flatListRef.current?.scrollToEnd({ animated: false });
+                }
+              }}
+              ListEmptyComponent={
+                <View style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: 40,
+                }}>
+                  <Text style={{
+                    color: DARK_GRAY,
+                    fontSize: 16,
+                    textAlign: 'center'
+                  }}>
+                    Start a conversation with {matchName}
+                  </Text>
+                </View>
+              }
+              // Enable scroll indicator
+              indicatorStyle="black"
+              scrollIndicatorInsets={{ right: 1 }}
+            />
 
-          {isTyping && (
-            <View style={{ padding: 16, alignItems: 'flex-start' }}>
+            {/* Typing Indicator */}
+            {isTyping && (
               <View style={{
+                position: 'absolute',
+                bottom: 8,
+                left: 16,
                 backgroundColor: '#f0f0f0',
                 padding: 12,
-                borderRadius: 16,
+                borderRadius: 18,
+                flexDirection: 'row',
+                alignItems: 'center',
               }}>
-                <Text style={{ color: DARK_GRAY, fontStyle: 'italic' }}>
-                  {matchName} is typing...
+                <Text style={{ color: DARK_GRAY, fontSize: 14 }}>
+                  {matchName} is typing
                 </Text>
+                <View style={{ flexDirection: 'row', marginLeft: 4 }}>
+                  <Text style={{ color: DARK_GRAY }}>...</Text>
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
 
+          {/* Fixed Input Container at Bottom */}
           <View style={{
-            flexDirection: 'row',
-            padding: 16,
-            alignItems: 'flex-end',
+            height: INPUT_CONTAINER_HEIGHT,
             backgroundColor: WHITE,
+            borderTopWidth: 1,
+            borderTopColor: '#e0e0e0',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
           }}>
-            <TextInput
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor: DARK_GRAY,
-                borderRadius: 20,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                marginRight: 8,
-                maxHeight: 100,
-              }}
-              placeholder="Type a message..."
-              value={newMessage}
-              onChangeText={handleTyping}
-              multiline
-              onSubmitEditing={sendMessage}
-            />
+            <View style={{
+              flex: 1,
+              minHeight: 44,
+              maxHeight: 100,
+              marginRight: 12,
+              borderWidth: 1,
+              borderColor: '#e0e0e0',
+              borderRadius: 22,
+              backgroundColor: '#f9f9f9',
+              paddingHorizontal: 16,
+              justifyContent: 'center',
+            }}>
+              <TextInput
+                style={{
+                  fontSize: 16,
+                  color: '#000',
+                  paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+                  maxHeight: 80,
+                }}
+                placeholder="Type a message..."
+                placeholderTextColor="#999"
+                value={newMessage}
+                onChangeText={handleTyping}
+                multiline
+                textAlignVertical="center"
+                returnKeyType="default"
+                blurOnSubmit={false}
+                onSubmitEditing={() => {
+                  if (newMessage.trim()) {
+                    sendMessage();
+                  }
+                }}
+              />
+            </View>
+
             <TouchableOpacity
               onPress={sendMessage}
               disabled={!newMessage.trim() || sending}
+              testID="send-button"
               style={{
-                backgroundColor: newMessage.trim() ? PRIMARY_COLOR : DARK_GRAY,
-                borderRadius: 20,
-                padding: 8,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: newMessage.trim() && !sending ? PRIMARY_COLOR : '#e0e0e0',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               {sending ? (
                 <ActivityIndicator size="small" color={WHITE} />
               ) : (
-                <Icon name="send" color={WHITE} size={20} />
+                <Icon
+                  name="send"
+                  color={newMessage.trim() ? WHITE : '#999'}
+                  size={22}
+                />
               )}
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </SafeAreaView>
   );
 };
 

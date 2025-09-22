@@ -49,7 +49,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       const user = await AuthService.getCurrentUser();
       setAuth(authResponse, user);
 
-      navigation.replace('Main');
+      // No need to navigate - the auth state change will handle it automatically
     } catch (error: any) {
       Alert.alert(
         'Login Failed',

@@ -52,20 +52,25 @@ class SignalRService {
   }
 
   async leaveMatch(matchId: string): Promise<void> {
-    if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('LeaveMatch', matchId);
-    }
+    // LeaveMatch not implemented on backend - SignalR handles cleanup on disconnect
+    // Keeping method for future implementation
   }
 
   async sendTyping(matchId: string): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('SendTyping', matchId);
+      await this.connection.invoke('Typing', {
+        matchId: matchId,
+        isTyping: true
+      });
     }
   }
 
   async stopTyping(matchId: string): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
-      await this.connection.invoke('StopTyping', matchId);
+      await this.connection.invoke('Typing', {
+        matchId: matchId,
+        isTyping: false
+      });
     }
   }
 

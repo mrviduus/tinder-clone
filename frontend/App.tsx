@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, Matches, Messages, Profile } from "./screens";
+import { Home, Matches, Messages, Chat, Profile } from "./screens";
 import LoginScreen from "./src/screens/Login";
 import RegisterScreen from "./src/screens/Register";
 import { useAuthStore } from "./src/store/authStore";
@@ -70,7 +70,7 @@ const MainTabNavigator = () => (
 
     <Tab.Screen
       name="Chat"
-      component={Messages}
+      component={Chat}
       options={{
         tabBarIcon: ({ focused }) => (
           <TabBarIcon
@@ -133,7 +133,10 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <>
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen name="Messages" component={Messages} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

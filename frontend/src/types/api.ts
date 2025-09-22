@@ -111,7 +111,8 @@ export interface Message {
 
 export interface SendMessageRequest {
   matchId: string;
-  content: string;
+  text: string;
+  photoId?: string;
 }
 
 export interface ErrorResponse {
