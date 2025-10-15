@@ -6245,7 +6245,7 @@ react-is@^18.0.0:
   resolved "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
 
-react-native-deck-swiper@^2.0.17:
+react-native-deck-swiper@^2.0.19:
   version "2.0.19"
   resolved "https://registry.npmjs.org/react-native-deck-swiper/-/react-native-deck-swiper-2.0.19.tgz"
   integrity sha512-NQBxIVgiTA/k3yWTqvsyjPiNup/jRatLUSKkoBxfNrxUNXKShrHtUIzK4hM8XCvJ+eyzmQqItCGd113fjAGRYA==

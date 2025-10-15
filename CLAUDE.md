@@ -47,15 +47,26 @@ dotnet restore
 dotnet build
 ASPNETCORE_ENVIRONMENT=Development dotnet run
 
+# Run backend on all interfaces (required for iOS/mobile testing)
+ASPNETCORE_URLS=http://+:8080 ASPNETCORE_ENVIRONMENT=Development dotnet run
+
 # Database operations
 dotnet ef database update         # Apply migrations
 dotnet ef migrations add <Name>    # Create new migration
+dotnet ef migrations remove       # Remove last migration
+dotnet ef database drop           # Drop database
 
-# Run tests
+# Run all tests
 cd backend/App.Tests
 dotnet test
 # Or use the test script
 ./backend/test.sh
+
+# Run a specific test
+dotnet test --filter "FullyQualifiedName=App.Tests.Services.AuthServiceTests.RegisterAsync_ValidRequest_CreatesUser"
+
+# Run tests matching a pattern
+dotnet test --filter "FullyQualifiedName~AuthService"
 ```
 
 ### Frontend (React Native/Expo)
@@ -74,6 +85,20 @@ docker-compose up --build
 
 # Start with database migration
 docker-compose --profile migration up --build
+
+# Start in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f db
+
+# Stop and remove containers
+docker-compose down
+
+# Stop and remove with volumes (clean slate)
+docker-compose down -v
 
 # Access services
 # Backend API: http://localhost:8080
@@ -167,6 +192,23 @@ docker exec -i tinder-clone-db-1 psql -U appuser -d appdb < backend/App/Migratio
 3. Frontend automatically refreshes expired tokens
 4. SignalR uses JWT for authentication
 
+## Important Configuration Files
+
+### Backend
+- `backend/App/appsettings.json` - Base configuration
+- `backend/App/appsettings.Development.json` - Development overrides
+- `backend/App/Program.cs` - Service registration, middleware pipeline
+- `backend/App/App.csproj` - Project dependencies and SDK version
+
+### Frontend
+- `frontend/src/config/api.ts` - API URL configuration (CRITICAL for iOS)
+- `frontend/app.json` - Expo configuration
+- `frontend/tsconfig.json` - TypeScript configuration
+
+### Docker
+- `docker-compose.yml` - Container orchestration
+- `.env` - Environment variables (create from .env.example)
+
 ## Troubleshooting
 
 ### Common Issues and Fixes
@@ -191,4 +233,13 @@ docker exec -i tinder-clone-db-1 psql -U appuser -d appdb < backend/App/Migratio
 
 5. **Missing Test Data**
    - Apply migrations: `docker exec -i tinder-clone-db-1 psql -U appuser -d appdb < backend/App/Migrations/AddCompleteTestData.sql`
-- to memorize
+
+6. **SignalR Connection Issues**
+   - Check CORS settings in `appsettings.json`
+   - Ensure JWT token is valid and included in connection
+   - Verify WebSocket support in deployment environment
+
+7. **Photo Upload Problems**
+   - Check max file size in `appsettings.json` (Photos:MaxBytes)
+   - Verify content type is image/jpeg or image/png
+   - Database BLOB storage limitations (consider cloud storage for production)

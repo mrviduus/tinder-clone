@@ -1,0 +1,762 @@
+openapi: 3.0.0
+info:
+  title: Tinder Clone API
+  version: 1.0.0
+  description: Dating application REST API with real-time features via SignalR
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+  - url: https://api.tinderclone.com
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Auth DTOs
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName, birthDate, gender]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+          maxLength: 100
+        birthDate:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [male, female, other]
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+        user:
+          $ref: '#/components/schemas/UserDto'
+
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    # User/Profile DTOs
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+
+    ProfileDto:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        city:
+          type: string
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoDto'
+        distance:
+          type: number
+          description: Distance in kilometers
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        bio:
+          type: string
+        seekingGender:
+          type: string
+        maxDistance:
+          type: integer
+        ageRangeMin:
+          type: integer
+        ageRangeMax:
+          type: integer
+
+    UpdateLocationRequest:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    # Photo DTOs
+    PhotoDto:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        isPrimary:
+          type: boolean
+        orderIndex:
+          type: integer
+
+    PhotoUploadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        isPrimary:
+          type: boolean
+        orderIndex:
+          type: integer
+
+    # Feed/Swipe DTOs
+    FeedProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        age:
+          type: integer
+        bio:
+          type: string
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoDto'
+        distance:
+          type: number
+        city:
+          type: string
+
+    SwipeRequest:
+      type: object
+      required: [targetUserId, direction]
+      properties:
+        targetUserId:
+          type: string
+        direction:
+          type: string
+          enum: [Like, Pass]
+        isSuperLike:
+          type: boolean
+          default: false
+
+    SwipeResponse:
+      type: object
+      properties:
+        isMatch:
+          type: boolean
+        matchId:
+          type: string
+          nullable: true
+
+    # Match DTOs
+    MatchDto:
+      type: object
+      properties:
+        id:
+          type: string
+        matchedUser:
+          $ref: '#/components/schemas/ProfileDto'
+        matchedAt:
+          type: string
+          format: date-time
+        lastMessage:
+          $ref: '#/components/schemas/MessageDto'
+        unreadCount:
+          type: integer
+
+    # Message DTOs
+    MessageDto:
+      type: object
+      properties:
+        id:
+          type: string
+        matchId:
+          type: string
+        senderId:
+          type: string
+        recipientId:
+          type: string
+        content:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    SendMessageRequest:
+      type: object
+      required: [matchId, content]
+      properties:
+        matchId:
+          type: string
+        content:
+          type: string
+          maxLength: 1000
+
+    # Error Response
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        details:
+          type: object
+
+paths:
+  # Auth Endpoints
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        200:
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout and revoke refresh token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        204:
+          description: Logged out successfully
+
+  # Profile Endpoints
+  /profile:
+    get:
+      tags: [Profile]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDto'
+
+    put:
+      tags: [Profile]
+      summary: Update profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        200:
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDto'
+
+  /profile/location:
+    put:
+      tags: [Profile]
+      summary: Update location
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        204:
+          description: Location updated
+
+  /profile/photos:
+    post:
+      tags: [Profile]
+      summary: Upload photo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                isPrimary:
+                  type: boolean
+      responses:
+        201:
+          description: Photo uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoUploadResponse'
+
+  /profile/photos/{photoId}:
+    delete:
+      tags: [Profile]
+      summary: Delete photo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Photo deleted
+
+  /profile/photos/{photoId}/primary:
+    put:
+      tags: [Profile]
+      summary: Set primary photo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Primary photo set
+
+  /profile/photos/reorder:
+    put:
+      tags: [Profile]
+      summary: Reorder photos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                photoIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        204:
+          description: Photos reordered
+
+  # Feed/Discovery Endpoints
+  /feed:
+    get:
+      tags: [Discovery]
+      summary: Get discovery feed
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Feed retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedProfile'
+
+  # Swipe Endpoints
+  /swipes:
+    post:
+      tags: [Swipes]
+      summary: Swipe on user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwipeRequest'
+      responses:
+        200:
+          description: Swipe recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwipeResponse'
+
+  /swipes/undo:
+    post:
+      tags: [Swipes]
+      summary: Undo last swipe
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Swipe undone
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  undoneUserId:
+                    type: string
+
+  # Match Endpoints
+  /matches:
+    get:
+      tags: [Matches]
+      summary: Get all matches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: includeUnmatched
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Matches retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchDto'
+
+  /matches/{matchId}:
+    get:
+      tags: [Matches]
+      summary: Get match details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Match retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchDto'
+
+  /matches/{matchId}/unmatch:
+    post:
+      tags: [Matches]
+      summary: Unmatch user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Unmatched successfully
+
+  # Message Endpoints
+  /messages/{matchId}:
+    get:
+      tags: [Messages]
+      summary: Get messages for match
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        200:
+          description: Messages retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageDto'
+
+  /messages:
+    post:
+      tags: [Messages]
+      summary: Send message
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        201:
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageDto'
+
+  /messages/{messageId}/read:
+    put:
+      tags: [Messages]
+      summary: Mark message as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Message marked as read
+
+  # Health Check
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        200:
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+# WebSocket Events (SignalR)
+x-signalr-hubs:
+  ChatHub:
+    description: Real-time chat functionality
+    methods:
+      # Server to Client
+      ReceiveMessage:
+        description: Receive new message
+        parameters:
+          message:
+            $ref: '#/components/schemas/MessageDto'
+
+      UserTyping:
+        description: User typing indicator
+        parameters:
+          matchId:
+            type: string
+          userId:
+            type: string
+          isTyping:
+            type: boolean
+
+      MessageRead:
+        description: Message read notification
+        parameters:
+          messageId:
+            type: string
+          readAt:
+            type: string
+            format: date-time
+
+      NewMatch:
+        description: New match notification
+        parameters:
+          match:
+            $ref: '#/components/schemas/MatchDto'
+
+      UserOnline:
+        description: User online status
+        parameters:
+          userId:
+            type: string
+          isOnline:
+            type: boolean
+
+      # Client to Server
+      SendMessage:
+        description: Send message to match
+        parameters:
+          matchId:
+            type: string
+          content:
+            type: string
+
+      StartTyping:
+        description: Start typing indicator
+        parameters:
+          matchId:
+            type: string
+
+      StopTyping:
+        description: Stop typing indicator
+        parameters:
+          matchId:
+            type: string
+
+      MarkAsRead:
+        description: Mark messages as read
+        parameters:
+          messageIds:
+            type: array
+            items:
+              type: string
+
+      JoinMatch:
+        description: Join match group for real-time updates
+        parameters:
+          matchId:
+            type: string
+
+      LeaveMatch:
+        description: Leave match group
+        parameters:
+          matchId:
+            type: string

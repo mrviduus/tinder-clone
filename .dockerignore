@@ -1,0 +1,84 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README*
+LICENSE*
+CHANGELOG*
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.azure-pipelines.yml
+.circleci/
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment files (use build args instead)
+.env
+.env.*
+!.env.example
+
+# Backend specific
+backend/bin/
+backend/obj/
+backend/App/bin/
+backend/App/obj/
+backend/App.Tests/bin/
+backend/App.Tests/obj/
+backend/packages/
+backend/*.user
+backend/*.suo
+backend/.vs/
+backend/TestResults/
+backend/coverage/
+
+# Frontend specific
+frontend/node_modules/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/dist/
+frontend/build/
+frontend/web-build/
+frontend/coverage/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.npm/
+frontend/.yarn/
+
+# Test files
+*.test.*
+*.spec.*
+__tests__/
+__mocks__/
+test/
+tests/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+
+# Logs
+logs/
+*.log
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

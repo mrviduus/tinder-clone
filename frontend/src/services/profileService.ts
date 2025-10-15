@@ -1,27 +1,31 @@
-import apiClient from '../config/api';
+import { apiClient } from '../config/api';
 import {
-  Profile,
+  ProfileDto,
   UpdateProfileRequest,
   UpdateLocationRequest,
-  Photo,
-} from '../types/api';
+  PhotoDto,
+} from '../types';
 
 export class ProfileService {
-  static async getProfile(): Promise<Profile> {
-    const response = await apiClient.get<Profile>('/me');
+  static async getProfile(): Promise<ProfileDto> {
+    const response = await apiClient.get<ProfileDto>('/profile');
     return response.data;
   }
 
-  static async updateProfile(data: UpdateProfileRequest): Promise<Profile> {
-    const response = await apiClient.put<Profile>('/me', data);
+  static async getPublicProfile(userId: string): Promise<ProfileDto> {
+    const response = await apiClient.get<ProfileDto>(`/profile/${userId}`);
     return response.data;
+  }
+
+  static async updateProfile(data: UpdateProfileRequest): Promise<void> {
+    await apiClient.put('/profile', data);
   }
 
   static async updateLocation(data: UpdateLocationRequest): Promise<void> {
-    await apiClient.put('/me/location', data);
+    await apiClient.put('/profile/location', data);
   }
 
-  static async uploadPhoto(imageUri: string): Promise<Photo> {
+  static async uploadPhoto(imageUri: string): Promise<PhotoDto> {
     const formData = new FormData();
 
     // Create file blob for upload
@@ -33,7 +37,7 @@ export class ProfileService {
 
     formData.append('file', fileBlob);
 
-    const response = await apiClient.post<Photo>('/me/photos', formData, {
+    const response = await apiClient.post<PhotoDto>('/profile/photos', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -42,6 +46,10 @@ export class ProfileService {
   }
 
   static async deletePhoto(photoId: string): Promise<void> {
-    await apiClient.delete(`/me/photos/${photoId}`);
+    await apiClient.delete(`/profile/photos/${photoId}`);
+  }
+
+  static async setPrimaryPhoto(photoId: string): Promise<void> {
+    await apiClient.put(`/profile/photos/${photoId}/primary`);
   }
 }

@@ -59,10 +59,9 @@ services:
       dockerfile: Dockerfile
     environment:
       EXPO_PUBLIC_API_BASE_URL: http://localhost:8080
+      WDS_SOCKET_PORT: 0
     ports:
-      - "19006:19006"  # Expo Web
-      - "19000:19000"  # Expo Dev Server
-      - "19001:19001"  # Expo Dev Tools
+      - "8081:8081"    # Expo Web application
     volumes:
       - ./frontend:/app
       - /app/node_modules

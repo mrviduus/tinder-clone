@@ -1,16 +1,21 @@
-import apiClient from '../config/api';
-import { SwipeRequest, SwipeResult } from '../types/api';
+import { apiClient } from '../config/api';
+import { SwipeRequest, SwipeResponse } from '../types';
+import { useFeedStore } from '../store/feedStore';
 
 export class SwipeService {
   private static readonly MAX_RETRIES = 3;
   private static readonly RETRY_DELAY = 1000; // 1 second
 
-  static async processSwipe(swipeData: SwipeRequest): Promise<SwipeResult> {
+  static async processSwipe(swipeData: SwipeRequest): Promise<SwipeResponse> {
     let lastError: any;
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
-        const response = await apiClient.post<SwipeResult>('/swipes', swipeData);
+        const response = await apiClient.post<SwipeResponse>('/swipe', swipeData);
+
+        // Remove swiped profile from feed
+        useFeedStore.getState().removeCurrentProfile();
+
         return response.data;
       } catch (error: any) {
         lastError = error;
@@ -31,6 +36,22 @@ export class SwipeService {
     // If all retries failed, throw the last error
     console.error('All swipe attempts failed:', lastError);
     throw lastError;
+  }
+
+  static async like(targetUserId: string): Promise<SwipeResponse> {
+    const request: SwipeRequest = {
+      targetUserId,
+      direction: 'like',
+    };
+    return this.processSwipe(request);
+  }
+
+  static async pass(targetUserId: string): Promise<SwipeResponse> {
+    const request: SwipeRequest = {
+      targetUserId,
+      direction: 'pass',
+    };
+    return this.processSwipe(request);
   }
 
   // Store pending swipes for offline support
