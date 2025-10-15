@@ -1,9 +1,13 @@
 #!/bin/bash
+# Run backend tests
+# Usage: ./test.sh
 
 echo "================================================"
 echo "Running Tinder Clone API Tests"
 echo "================================================"
 
+# Navigate to project root and then to test directory
+cd "$(dirname "$0")/../.."
 cd backend/App.Tests
 
 echo ""

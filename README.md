@@ -1,261 +1,215 @@
-# Tinder MVP
+# Tinder Clone - Full Stack Dating Application
 
-A minimal viable Tinder-like dating application built with ASP.NET Core backend, PostgreSQL + PostGIS database, and Expo React Native frontend.
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=.net&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.74-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/Expo-SDK_51-000020?style=for-the-badge&logo=expo&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![SignalR](https://img.shields.io/badge/SignalR-Real--time-512BD4?style=for-the-badge&logo=.net&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## Features
+A production-ready Tinder clone featuring real-time messaging, geolocation-based matching, and a modern mobile-first design. Built with **ASP.NET Core**, **React Native (Expo)**, **PostgreSQL/PostGIS**, and **SignalR** for real-time communication.
 
-- ✅ User registration and authentication (JWT + refresh tokens)
-- ✅ User profiles with photos and preferences
-- ✅ Location-based candidate discovery
-- ✅ Swipe gestures (like/pass)
-- ✅ Real-time matching system
-- ✅ Live chat with SignalR
-- ✅ Message read receipts and typing indicators
-- ✅ Photo upload and management
-- ✅ Distance-based filtering
+## 🌟 Key Features
 
-## Tech Stack
+### Core Functionality
+- 👤 **User Authentication** - JWT-based authentication with refresh token rotation
+- 📍 **Location-Based Matching** - Find nearby users using PostGIS spatial queries
+- 💖 **Swipe Mechanism** - Intuitive like/pass gestures with smooth animations
+- 🎯 **Smart Matching Algorithm** - Instant matches on mutual likes
+- 💬 **Real-Time Chat** - SignalR-powered messaging with typing indicators
+- 📸 **Photo Management** - Multiple photo uploads with primary photo selection
+- 🔔 **Live Notifications** - Real-time match and message notifications
 
-### Backend
-- ASP.NET Core (.NET 9) Web API
-- Entity Framework Core with PostgreSQL
-- PostGIS for geospatial queries
-- ASP.NET Identity for authentication
-- JWT tokens with refresh token rotation
-- SignalR for real-time chat
-- Serilog for logging
-- Health checks
+### Technical Highlights
+- **Clean Architecture** - Domain-driven design with separation of concerns
+- **Type Safety** - Full TypeScript support on frontend, C# 12 on backend
+- **Geospatial Queries** - Efficient location-based searches with PostGIS
+- **Real-Time Updates** - WebSocket connections for instant updates
+- **Token Rotation** - Secure JWT refresh token mechanism
+- **Docker Ready** - Complete containerization for easy deployment
+- **Cross-Platform** - iOS, Android, and Web support via Expo
 
-### Frontend
-- Expo React Native (TypeScript)
-- React Navigation for routing
-- Zustand for state management
-- Axios for API calls
-- SignalR client for real-time features
-- React Native Reanimated for swipe gestures
-
-### Database
-- PostgreSQL 16 with PostGIS extension
-- Optimized for location-based queries
-- Proper indexing for performance
-
-## Quick Start
-
-1. **Clone and setup environment:**
-   ```bash
-   git clone <repo>
-   cd tinder-mvp
-   cp .env.example .env
-   ```
-
-2. **Start with Docker Compose:**
-   ```bash
-   docker compose up --build
-   ```
-
-3. **Access the application:**
-   - Backend API: http://localhost:8080
-   - Swagger UI: http://localhost:8080/swagger
-   - Frontend Web: http://localhost:19006
-   - pgAdmin (optional): http://localhost:5050
-
-## Development Setup
+## 🚀 Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
+- Node.js 20+ (for local development)
 - .NET 9 SDK (for local development)
-- Node.js 20+ (for local frontend development)
+- iOS Simulator / Android Emulator (optional)
 
-### Backend Development
+### 🐳 Docker Deployment (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/vasylvdovychenko/tinder-clone.git
+cd tinder-clone
+
+# Start all services
+docker-compose up --build
+
+# Apply database migrations and seed data
+docker-compose --profile migration up
+```
+
+Access the services:
+- 🌐 **API**: http://localhost:8080
+- 📱 **Web App**: http://localhost:19006
+- 📖 **Swagger**: http://localhost:8080/swagger
+- 🗄️ **pgAdmin**: http://localhost:5050
+
+### 💻 Local Development
+
+#### Backend Setup
 ```bash
 cd backend/App
 dotnet restore
-dotnet ef database update
-dotnet run
+dotnet build
+ASPNETCORE_ENVIRONMENT=Development dotnet run
 ```
 
-### Frontend Development
+#### Frontend Setup
 ```bash
 cd frontend
 npm install
-npm run start:web
+npm run web    # Web version
+npm run ios    # iOS Simulator
+npm run android # Android Emulator
 ```
 
-### Database Access
-- **Connection String:** Host=localhost;Port=5432;Database=appdb;Username=appuser;Password=appsecret
-- **pgAdmin:** http://localhost:5050 (admin@example.com / admin)
+## 🏗️ Architecture
 
-## Project Structure
-
+### System Design
 ```
-.
-├── docker-compose.yml          # Container orchestration
-├── .env.example               # Environment variables template
-├── requirements.md            # Detailed requirements specification
-├── backend/
-│   ├── Dockerfile
-│   └── App/                   # ASP.NET Core Web API
-│       ├── Controllers/       # API endpoints
-│       ├── Services/          # Business logic
-│       ├── Data/             # EF Core DbContext
-│       ├── Domain/           # Entity models
-│       ├── DTOs/             # Request/response models
-│       ├── Hubs/             # SignalR hubs
-│       └── Migrations/       # Database migrations
-└── frontend/
-    ├── Dockerfile
-    └── src/
-        ├── screens/          # React Native screens
-        ├── navigation/       # Navigation setup
-        ├── api/             # API layer
-        ├── store/           # Zustand stores
-        └── types/           # TypeScript types
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│                 │     │                 │     │                 │
+│  React Native   │────▶│  ASP.NET Core   │────▶│  PostgreSQL     │
+│   Expo (TS)     │◀────│    Web API      │◀────│   + PostGIS     │
+│                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+         │                       │
+         │                       │
+         └──────SignalR──────────┘
+           (Real-time Chat)
 ```
 
-## API Documentation
+### Backend Structure
+- **Clean Architecture Pattern**
+  - `Controllers/` - HTTP endpoints
+  - `Services/` - Business logic layer
+  - `Domain/` - Entity models
+  - `DTOs/` - Data transfer objects
+  - `Hubs/` - SignalR real-time hubs
+  - `Middleware/` - Custom middleware
 
-When running in development mode, visit http://localhost:8080/swagger for interactive API documentation.
+### Frontend Structure
+- **Component-Based Architecture**
+  - `screens/` - Application screens
+  - `services/` - API integration
+  - `store/` - Global state (Zustand)
+  - `components/` - Reusable components
+  - `types/` - TypeScript definitions
 
-### Key Endpoints
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/feed` - Get potential matches
-- `POST /api/swipes` - Swipe on users
-- `GET /api/matches` - Get user's matches
-- `SignalR /hubs/chat` - Real-time chat
+### Database Schema
+- **PostGIS-enabled PostgreSQL**
+  - Spatial indexing for location queries
+  - Optimized for geospatial operations
+  - Efficient match and message retrieval
 
-## Database & Migrations
+## 🧪 Testing
 
-### Database Setup
-The application uses PostgreSQL with PostGIS for location-based features. The database is automatically set up when running with Docker Compose.
-
-### Migrations
-Database schema and test data are managed through Entity Framework Core migrations:
-
+### Run Tests
 ```bash
-# Apply all migrations (includes test data)
-dotnet ef database update
+# Backend tests
+cd backend/App.Tests
+dotnet test
 
-# Create a new migration
-dotnet ef migrations add MigrationName
-
-# Rollback to a specific migration
-dotnet ef database update MigrationName
+# Or use the test script
+./scripts/testing/test.sh
 ```
 
-### Test Data Migration
-The application includes a dedicated migration `20250918052911_AddTestUsers` that creates test users Alice and Bob with:
-- **Complete user profiles** with proper authentication
-- **Profile photos** (placeholder images for testing)
-- **Geolocation data** (both located in NYC)
-- **Compatible matching preferences** (Alice seeks males, Bob seeks females)
+### Test Users
+The application includes pre-configured test users (all with password `Password123!`):
+- alice@example.com - Female, 28, San Francisco
+- bob@example.com - Male, 32, San Francisco
+- charlie@example.com - Male, 29, San Francisco
+- diana@example.com - Female, 26, San Francisco
+- eve@example.com - Female, 31, San Francisco
 
-This test data is created via database migration, ensuring it's consistently available across all environments.
+## 📱 Supported Platforms
 
-### Manual Test Data Management
-If you need to add more test photos or data:
+| Platform | Status | Notes |
+|----------|--------|-------|
+| iOS | ✅ Fully Supported | Requires Xcode & iOS Simulator |
+| Android | ✅ Fully Supported | Requires Android Studio |
+| Web | ✅ Fully Supported | Progressive Web App |
 
-1. **Add photos to existing users:**
-   ```sql
-   INSERT INTO photos ("Id", "UserId", "Data", "ContentType", "SizeBytes", "IsPrimary", "UploadedAt")
-   VALUES (gen_random_uuid(), 'user-id-here', decode('base64-data-here', 'base64'), 'image/jpeg', file_size, false, NOW());
-   ```
-
-2. **Update user photos from assets:**
-   ```bash
-   # Convert image to base64
-   base64 -i path/to/image.jpg | tr -d '\n' > image.b64
-
-   # Use the base64 content in the SQL above
-   ```
-
-## Database Schema
-
-- **users** - ASP.NET Identity users
-- **profiles** - User profiles with location (PostGIS Point)
-- **photos** - Photo storage with BLOB data
-- **swipes** - User swipe history
-- **matches** - Mutual likes
-- **messages** - Chat messages with read receipts
-- **blocks** - User blocking functionality
-- **refresh_tokens** - JWT refresh token storage
-
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
-See `.env.example` for all available configuration options.
+See `scripts/docker/.env.docker` for Docker configuration.
 
-Key settings:
-- `ConnectionStrings__Default` - PostgreSQL connection
-- `Jwt__Key` - JWT signing key (change in production!)
-- `Photos__MaxBytes` - Maximum photo size (5MB default)
-- `Cors__AllowedOrigins__0` - Frontend URL for CORS
+### API Configuration
+The API URL configuration handles platform-specific networking:
+- iOS Simulator: `http://localhost:8080/api`
+- Android Emulator: `http://10.0.2.2:8080/api`
+- Physical Device: `http://YOUR_IP:8080/api`
 
-### Photo Storage
-Currently stores photos as BLOB data in PostgreSQL. For production, consider moving to object storage (S3, Azure Blob) with CDN.
+## 📚 Documentation
 
-## Testing
+- [📋 Requirements & Specifications](./docs/requirements.md)
+- [🏛️ Architecture Documentation](./docs/architecture/)
+- [🚀 Setup Guides](./docs/setup/)
+- [🧪 Testing Documentation](./docs/testing/)
+- [💻 Development History](./docs/development/)
+- [💾 Database Architecture](./docs/DATABASE_ARCHITECTURE.md)
+- [💬 Real-Time Chat Documentation](./docs/REAL_TIME_CHAT_DOCUMENTATION.md)
 
-### Test Credentials
-The application comes with test users created via database migrations for easy testing:
+## 🤝 Contributing
 
-**Alice (Female, 25)**
-- Email: `alice@example.com`
-- Password: `Password123!`
-- Profile: Has multiple photos, seeks males
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
-**Bob (Male, 28)**
-- Email: `bob@example.com`
-- Password: `Password123!`
-- Profile: Has multiple photos, seeks females
+### Development Workflow
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-**Additional Test Users:**
-- `charlie@example.com` / `Password123!` (Male, 30)
-- `diana@example.com` / `Password123!` (Female, 26)
-- `eve@example.com` / `Password123!` (Female, 24)
+## 📊 Project Status
 
-### Manual Testing
-1. **Quick Test:** Login as Alice or Bob using the credentials above
-2. **Photo Testing:** Both Alice and Bob have multiple photos already uploaded
-3. **Matching:** Alice and Bob are compatible and will appear in each other's feeds
-4. **Chat Testing:** Alice and Bob already have an existing match with chat history
-5. **Full Flow:** Register new users to test the complete registration flow
+This project is actively maintained and welcomes contributions. It serves as a comprehensive example of modern full-stack development with:
+- ✅ Production-ready architecture
+- ✅ Industry best practices
+- ✅ Comprehensive documentation
+- ✅ Clean, maintainable code
+- ✅ Full type safety
 
-### Health Check
-Visit http://localhost:8080/healthz to verify backend health.
+## 🐛 Known Issues
 
-## Production Considerations
+- Photo upload on web requires fallback to file input
+- iOS physical device requires IP configuration
+- SignalR reconnection needs manual handling in some edge cases
 
-### Security
-- Change JWT secret key
-- Use HTTPS in production
-- Implement rate limiting (.NET 9+ required)
-- Add photo content validation
-- Set up proper CORS policies
+## 📄 License
 
-### Performance
-- Add Redis for SignalR backplane (horizontal scaling)
-- Move photos to object storage + CDN
-- Implement database connection pooling
-- Add caching for frequent queries
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Monitoring
-- Set up application insights
-- Add structured logging
-- Monitor database performance
-- Set up health check monitoring
+## 🙏 Acknowledgments
 
-## Known Limitations (MVP)
+- ASP.NET Core team for the excellent framework
+- Expo team for cross-platform mobile development
+- PostGIS for geospatial capabilities
+- SignalR for real-time functionality
 
-- No push notifications
-- Basic photo validation
-- Simple matching algorithm
-- No video calls
-- No premium features
-- No social login integration
-- No email verification
-- Basic error handling on frontend
+## 📞 Contact
 
-## License
+**Vasyl Vdovychenko** - [GitHub Profile](https://github.com/vasylvdovychenko)
 
-This is a demo/educational project. Use at your own risk.
+Project Link: [https://github.com/vasylvdovychenko/tinder-clone](https://github.com/vasylvdovychenko/tinder-clone)
+
+---
+
+<p align="center">Made with ❤️ by a passionate developer</p>
+<p align="center">⭐ If you find this project useful, please consider giving it a star!</p>

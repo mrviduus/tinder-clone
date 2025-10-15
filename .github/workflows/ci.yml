@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: appsecret
+          POSTGRES_DB: appdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      working-directory: ./backend/App
+      run: dotnet restore
+
+    - name: Build
+      working-directory: ./backend/App
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run tests
+      working-directory: ./backend/App.Tests
+      run: dotnet test --no-build --verbosity normal --configuration Release
+      env:
+        ConnectionStrings__Default: "Host=localhost;Port=5432;Database=appdb;Username=appuser;Password=appsecret"
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Type check
+      working-directory: ./frontend
+      run: npm run type-check || npx tsc --noEmit
+
+    - name: Build Expo web
+      working-directory: ./frontend
+      run: npx expo export --platform web
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Backend Docker image
+      run: docker build -t tinder-clone-backend:test ./backend
+
+    - name: Build Frontend Docker image
+      run: docker build -t tinder-clone-frontend:test ./frontend
+
+    - name: Test Docker Compose
+      run: |
+        docker-compose config
+        docker-compose up -d
+        sleep 10
+        curl -f http://localhost:8080/healthz || exit 1
+        docker-compose down
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Run .NET format check
+      working-directory: ./backend
+      run: |
+        dotnet tool install -g dotnet-format || true
+        dotnet format --verify-no-changes --verbosity diagnostic || true

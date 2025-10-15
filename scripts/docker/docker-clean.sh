@@ -17,6 +17,10 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
+# Navigate to project root
+PROJECT_ROOT="$(dirname "$0")/../.."
+cd "$PROJECT_ROOT"
+
 echo ""
 echo "📦 Step 1: Stopping all running containers..."
 docker-compose down 2>/dev/null || true

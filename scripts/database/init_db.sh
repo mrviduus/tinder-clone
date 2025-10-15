@@ -1,4 +1,9 @@
 #!/bin/bash
+# Initialize the database with migrations and seed data
+# Usage: ./init_db.sh
+
+# Navigate to project root
+cd "$(dirname "$0")/../.."
 
 # Wait for database to be ready
 echo "Waiting for database to be ready..."
