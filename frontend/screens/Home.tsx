@@ -126,6 +126,16 @@ const Home = () => {
     setCurrentIndex(cardIndex + 1);
   };
 
+  const onSwipedTop = (cardIndex: number) => {
+    const profile = candidates[cardIndex];
+    if (profile) {
+      // Super Like - treat as regular like for now
+      // You can add special handling later
+      handleSwipe(SwipeDirection.Like, profile);
+    }
+    setCurrentIndex(cardIndex + 1);
+  };
+
   if (loading && candidates.length === 0) {
     return (
       <ImageBackground
@@ -168,7 +178,7 @@ const Home = () => {
 
         <Swiper
           cards={candidates}
-          renderCard={(item: Profile) => {
+          renderCard={(item: Profile, cardIndex: number) => {
             const mainPhoto = item.photos?.find(p => p.isMain) || item.photos?.[0];
             const age = new Date().getFullYear() - new Date(item.birthDate).getFullYear();
 
@@ -187,13 +197,32 @@ const Home = () => {
                 name={`${item.displayName}, ${age}`}
                 description={item.bio || `${item.jobTitle || 'Professional'}${item.company ? ` at ${item.company}` : ''}`}
                 matches={item.photos?.length || 0}
+                onLike={() => {
+                  console.log('Like button pressed for:', item.displayName);
+                  if (swiper) {
+                    swiper.swipeRight();
+                  }
+                }}
+                onPass={() => {
+                  console.log('Pass button pressed for:', item.displayName);
+                  if (swiper) {
+                    swiper.swipeLeft();
+                  }
+                }}
+                onSuperLike={() => {
+                  console.log('Super Like button pressed for:', item.displayName);
+                  if (swiper) {
+                    swiper.swipeTop();
+                  }
+                }}
               />
             );
           }}
           infinite={false}
-          verticalSwipe={false}
+          verticalSwipe={true}
           onSwipedLeft={onSwipedLeft}
           onSwipedRight={onSwipedRight}
+          onSwipedTop={onSwipedTop}
           ref={(newSwiper: any): void => setSwiper(newSwiper)}
           backgroundColor="transparent"
           stackSize={3}

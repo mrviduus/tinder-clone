@@ -18,6 +18,9 @@ const CardItem = ({
   isOnline,
   matches,
   name,
+  onLike,
+  onPass,
+  onSuperLike,
 }: CardItemT) => {
   // Custom styling
   const fullWidth = Dimensions.get("window").width;
@@ -75,15 +78,15 @@ const CardItem = ({
       {/* ACTIONS */}
       {hasActions && (
         <View style={styles.actionsCardItem}>
-          <TouchableOpacity style={styles.miniButton}>
+          <TouchableOpacity style={styles.miniButton} onPress={onSuperLike}>
             <Icon name="star" color={STAR_ACTIONS} size={14} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={onLike}>
             <Icon name="heart" color={LIKE_ACTIONS} size={25} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={onPass}>
             <Icon name="close" color={DISLIKE_ACTIONS} size={25} />
           </TouchableOpacity>
 
